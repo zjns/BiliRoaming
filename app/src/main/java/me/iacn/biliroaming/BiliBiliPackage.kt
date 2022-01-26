@@ -240,6 +240,9 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     }
     val videoUpperAdClass by Weak { mHookInfo["class_video_upper_ad"]?.findClassOrNull(mClassLoader) }
 
+    val videoSubtitleClass by Weak { mHookInfo["class_video_subtitle"]?.findClassOrNull(mClassLoader) }
+    val subtitleItemClass by Weak { mHookInfo["class_subtitle_item"]?.findClassOrNull(mClassLoader) }
+
     val ellipsizingTextViewClass by Weak {
         "com.bilibili.bplus.followingcard.widget.EllipsizingTextView".findClassOrNull(
             mClassLoader
@@ -1008,6 +1011,10 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
             findDynamicDescHolderListener()
         }.checkConjunctiveOrPut("classes_desc_copy_view", "method_desc_copy") {
             findDescCopyView()
+        }.checkOrPut("class_video_subtitle") {
+            findVideoSubtitleClass()
+        }.checkOrPut("class_subtitle_item") {
+            findSubtitleItemClass()
         }.checkOrPut("class_bangumi_uniform_season") {
             findBangumiUniformSeason()
         }.checkOrPut("class_background_player") {
@@ -1666,6 +1673,16 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 it.type == navigationViewClass
             }
         }
+    }
+
+    private fun findVideoSubtitleClass(): String? {
+        val regex = "^com\\.bapis\\.bilibili\\.community\\.service\\.\\w+\\.\\w+\\.VideoSubtitle$".toRegex()
+        return classesList.firstOrNull { it.matches(regex) }
+    }
+
+    private fun findSubtitleItemClass(): String? {
+        val regex = "^com\\.bapis\\.bilibili\\.community\\.service\\.\\w+\\.\\w+\\.SubtitleItem$".toRegex()
+        return classesList.firstOrNull { it.matches(regex) }
     }
 
     private fun findDownloadThreadListener() = classesList.filter {
