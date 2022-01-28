@@ -1,0 +1,76 @@
+name: Sync Fork
+
+on:
+  schedule:
+    # every 30 minutes
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Sync
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - name: Prepare python packages
+        run: |
+          pip install -U wheel
+          pip install -U pyrogram tgcrypto
+
+      - name: Get repo name
+        run: echo "REPO_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+
+      - name: Sync fork
+        id: sync
+        uses: zjns/repo-sync@master
+        with:
+          token: ${{ secrets.HUB_TOKEN }}
+          up_branch: master
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg_passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Report via Telegram
+        shell: python
+        if: always()
+        env:
+          API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT }}
+          CHANNEL_ID: ${{ secrets.TELEGRAM_TO }}
+          SUCCESS: ${{ job.status == 'success' }}
+        run: |
+          import asyncio
+          import os
+          from pyrogram import Client
+          commit_count=${{ steps.sync.outputs.commit_count }}
+          diff_commits=${{ toJSON(fromJSON(steps.sync.outputs.commits).*.message) }}
+          if not commit_count:
+            exit(0)
+          async def main():
+            bot = Client(
+              ":memory:",
+              api_id=os.environ["API_ID"],
+              api_hash=os.environ["API_HASH"],
+              bot_token=os.environ["BOT_TOKEN"],
+            )
+            async with bot:
+              channel_id = int(os.environ["CHANNEL_ID"])
+              repo = os.environ["REPO_NAME"]
+              repo_url = f"https://github.com/{os.environ['GITHUB_REPOSITORY']}"
+              success = True if (os.environ["SUCCESS"] == "true") else False
+              text = f"🎉 Fork sync success!\nRepo: [{repo}]({repo_url})" if (success) else f"😿 Fork sync failed!\nRepo: [{repo}]({repo_url})"
+              if success:
+                commits = "\n".join([f"∙ {commit}" for commit in diff_commits[:10]])
+                text += f"\n\nSynced commits:\n```{commits}```"
+              await bot.send_message(chat_id=channel_id, parse_mode="markdown", text=text, disable_web_page_preview=True)
+          async def wait():
+            try:
+              await asyncio.wait_for(main(), timeout=60)
+            except asyncio.TimeoutError:
+              print("message send timeout!!!")
+              exit(1)
+          asyncio.run(wait())
