@@ -1,0 +1,129 @@
+name: Build patched apk
+
+on:
+  workflow_run:
+    workflows: [Android CI]
+    types: [completed]
+    branches-ignore: [master]
+
+jobs:
+  patch:
+    name: Patch
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Setup JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+
+      - name: Setup Android SDK
+        run: |
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          echo "/usr/local/lib/android/sdk/build-tools/32.0.0" >> $GITHUB_PATH
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9.x'
+
+      - name: Prepare python packages
+        run: |
+          pip install -U wheel
+          pip install -U pyrogram tgcrypto
+
+      - name: Download release artifact
+        uses: actions/github-script@v5
+        with:
+          script: |
+            let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               run_id: context.payload.workflow_run.id,
+            });
+            let matchArtifact = allArtifacts.data.artifacts.filter((artifact) => {
+              return artifact.name == "release"
+            })[0];
+            let download = await github.rest.actions.downloadArtifact({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               artifact_id: matchArtifact.id,
+               archive_format: 'zip',
+            });
+            let fs = require('fs');
+            fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/release.zip`, Buffer.from(download.data));
+
+      - name: Unzip release artifact
+        run: unzip release.zip
+
+      - name: Get xposed module path
+        run: |
+          module_apk=`echo BiliRoaming_*.apk`
+          echo "MODULE_APK=$module_apk" >> $GITHUB_ENV
+
+      - name: Download bilibili apk
+        run: wget -nv -O Bilibili.apk https://dl.hdslb.com/mobile/latest/iBiliPlayer-bilih5.apk
+
+      - name: Get app info
+        run: |
+          echo "VER_CODE=`aapt dump badging Bilibili.apk | awk -F "[ =']" '$6 == "versionCode" {print $8}'`" >> $GITHUB_ENV
+          echo "VER_NAME=`aapt dump badging Bilibili.apk | awk -F "[ =']" '$10 == "versionName" {print $12}'`" >> $GITHUB_ENV
+          echo "M_VER_CODE=`aapt dump badging $MODULE_APK | awk -F "[ =']" '$6 == "versionCode" {print $8}'`" >> $GITHUB_ENV
+          echo "M_VER_NAME=`aapt dump badging $MODULE_APK | awk -F "[ =']" '$10 == "versionName" {print $12}'`" >> $GITHUB_ENV
+
+      - name: Append version
+        run: |
+          mv Bilibili.apk Bilibili-v$VER_NAME.apk
+          echo "BILIBILI_NAME=Bilibili-v$VER_NAME" >> $GITHUB_ENV
+          echo "BILIBILI_APK=Bilibili-v$VER_NAME.apk" >> $GITHUB_ENV
+
+      - name: Download jar patcher
+        run: wget -nv -O lspatch.jar https://github.com/LSPosed/LSPatch/releases/latest/download/lspatch.jar
+
+      - name: Apply patch
+        run: |
+          java -jar lspatch.jar -m $MODULE_APK --sigbypasslv 2 $BILIBILI_APK
+          patched_apk=`echo $BILIBILI_NAME-*.apk`
+          mv $patched_apk $BILIBILI_NAME-patched.apk
+          patched_apk=`echo $BILIBILI_NAME-*.apk`
+          echo "PATCHED_APK=$patched_apk" >> $GITHUB_ENV
+
+      - name: Send to Telegram
+        shell: python
+        env:
+          API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT }}
+          CHANNEL_ID: ${{ secrets.TELEGRAM_TO }}
+        run: |
+          import asyncio
+          import os
+          from pyrogram import Client
+          async def main():
+            bot = Client(
+              ":memory:",
+              api_id=os.environ["API_ID"],
+              api_hash=os.environ["API_HASH"],
+              bot_token=os.environ["BOT_TOKEN"],
+            )
+            async with bot:
+              ver_name = os.environ["VER_NAME"]
+              ver_code = os.environ["VER_CODE"]
+              m_ver_name = os.environ["M_VER_NAME"]
+              channel_id = int(os.environ["CHANNEL_ID"])
+              caption = f"Bilibili: {ver_name} ({ver_code})\nBiliRoaming: {m_ver_name} #Bilibili"
+              document = os.environ['PATCHED_APK']
+              await bot.send_document(
+                chat_id=channel_id,
+                document=document,
+                caption=caption,
+                parse_mode="markdown",
+              )
+          async def wait():
+            try:
+              await asyncio.wait_for(main(), timeout=600)
+            except asyncio.TimeoutError:
+              print("message send timeout!!!")
+              exit(1)
+          asyncio.run(wait())
