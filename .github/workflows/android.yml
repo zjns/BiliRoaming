@@ -1,13 +1,15 @@
 name: Android CI
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ master ]
+    branches: [me]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: ${{ !startsWith(github.event.head_commit.message, '[skip ci]') }}
+    #if: ${{ !startsWith(github.event.head_commit.message, '[skip ci]') }}
+    if: github.event_name == 'workflow_dispatch' || contains(join(github.event.commits.*.message), '[skip ci]')
 
     steps:
       - uses: actions/checkout@v2
@@ -19,7 +21,8 @@ jobs:
           java-version: 11
       - name: Retrieve version
         run: |
-          echo VERSION=$(echo ${{ github.event.head_commit.id }} | head -c 10) >> $GITHUB_ENV
+          #echo VERSION=$(echo ${{ github.event.head_commit.id }} | head -c 10) >> $GITHUB_ENV
+          echo VERSION=`awk -F "=" '$1 == "appVerName" {print $2}' gradle.properties` >> $GITHUB_ENV
       - uses: actions/cache@v2
         with:
           path: |
@@ -40,17 +43,28 @@ jobs:
           echo 'org.gradle.parallel=true' >> gradle.properties
           echo 'org.gradle.vfs.watch=true' >> gradle.properties
           echo 'org.gradle.jvmargs=-Xmx2048m' >> gradle.properties
-          ./gradlew -PappVerName=${{ env.VERSION }} assembleRelease assembleDebug
+          #./gradlew -PappVerName=${{ env.VERSION }} assembleRelease assembleDebug
+          ./gradlew -PappVerName=${{ env.VERSION }} assembleRelease
       - name: Upload built apk
-        if: success()
+        #if: success()
+        if: ${{ 'A' == 'B' }}
         uses: actions/upload-artifact@v2
         with:
           name: snapshot
           path: |
-              ${{ github.workspace }}/app/build/outputs/apk
-              ${{ github.workspace }}/app/build/outputs/mapping
+            ${{ github.workspace }}/app/build/outputs/apk
+            ${{ github.workspace }}/app/build/outputs/mapping
+
+      - name: Upload built release apk
+        if: success()
+        uses: actions/upload-artifact@v2
+        with:
+          name: release
+          path: ${{ github.workspace }}/app/release/BiliRoaming_${{ env.VERSION }}.apk
+
       - name: Post to channel
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+        #if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+        if: ${{ 'A' == 'B' }}
         env:
           CHANNEL_ID: ${{ secrets.TELEGRAM_TO }}
           BOT_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
@@ -68,7 +82,8 @@ jobs:
 
   skipped:
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.event.head_commit.message, '[skip ci]') }}
+    #if: ${{ startsWith(github.event.head_commit.message, '[skip ci]') }}
+    if: ${{ 'A' == 'B' }}
     steps:
       - uses: actions/checkout@v2
       - name: Send commit to telegram
