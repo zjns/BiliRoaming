@@ -4,7 +4,7 @@ import android.net.Uri
 import me.iacn.biliroaming.BiliBiliPackage
 import me.iacn.biliroaming.utils.*
 
-class VideoSubtitleHook(private val classLoader: ClassLoader) : BaseHook(classLoader) {
+class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
 
     private val host = "https://www.kofua.top/bsub/t2s"
 
@@ -14,24 +14,28 @@ class VideoSubtitleHook(private val classLoader: ClassLoader) : BaseHook(classLo
         BiliBiliPackage.instance.videoSubtitleClass?.hookAfterMethod("getSubtitlesList") ret@{ param ->
             val subtitles = param.result as? List<*> ?: listOf<Any>()
             val subtitleItemClass = BiliBiliPackage.instance.subtitleItemClass ?: return@ret
-            val lanCodes = subtitles.map { s -> s?.callMethod("getLan") as? String ?: "" }
+            val subTypeClass = BiliBiliPackage.instance.subtitleTypeClass ?: return@ret
+            val lanCodes = subtitles.map { s -> s?.callMethodOrNullAs<String>("getLan") }
             if ("zh-CN" !in lanCodes && "zh-Hant" in lanCodes) {
-                val zhHant = subtitles.first { s -> s?.callMethod("getLan") == "zh-Hant" } ?: return@ret
-                val subUrl = zhHant.callMethod("getSubtitleUrl") as? String ?: return@ret
-                val zhHansUrl = Uri.parse(host).buildUpon().appendQueryParameter("sub_url", subUrl).build().toString()
-                val subTypeClass = "com.bapis.bilibili.community.service.dm.v1.SubtitleType".findClass(classLoader)
-                val ccType = subTypeClass.getStaticObjectField("CC")
-                val item = subtitleItemClass.new()
-                item.callMethod("setLan", "zh-CN")
-                item.callMethod("setLanDoc", "简中（生成）")
-                item.callMethod("setSubtitleUrl", zhHansUrl)
-                item.callMethod("setType", ccType)
-                var id = zhHant.callMethod("getId") as? Long ?: 0L
-                item.callMethod("setId", ++id)
-                item.callMethod("setIdStr", id.toString())
-                val thiz = param.thisObject
-                thiz.callMethod("addSubtitles", subtitles.size, item)
-                param.result = thiz.callMethod("getSubtitlesList")
+                val zhHant = subtitles.find { s ->
+                    s?.callMethod("getLan") == "zh-Hant"
+                } ?: return@ret
+                val subUrl = zhHant.callMethodOrNullAs<String>("getSubtitleUrl") ?: return@ret
+                val zhHansUrl = Uri.parse(host).buildUpon()
+                    .appendQueryParameter("sub_url", subUrl)
+                    .build().toString()
+                val ccType = subTypeClass.getStaticObjectFieldOrNull("CC") ?: return@ret
+                var id = zhHant.callMethodOrNullAs<Long>("getId") ?: 0L
+                val item = subtitleItemClass.new().apply {
+                    callMethod("setLan", "zh-CN")
+                    callMethod("setLanDoc", "简中（生成）")
+                    callMethod("setSubtitleUrl", zhHansUrl)
+                    callMethod("setType", ccType)
+                    callMethod("setId", ++id)
+                    callMethod("setIdStr", id.toString())
+                }
+                param.thisObject.callMethod("addSubtitles", subtitles.size, item)
+                param.result = param.thisObject.callMethod("getSubtitlesList")
             }
         }
     }
