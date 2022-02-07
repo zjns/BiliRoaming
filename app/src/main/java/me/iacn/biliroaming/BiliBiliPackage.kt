@@ -240,6 +240,7 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
 
     val videoSubtitleClass by Weak { mHookInfo["class_video_subtitle"]?.findClassOrNull(mClassLoader) }
     val subtitleItemClass by Weak { mHookInfo["class_subtitle_item"]?.findClassOrNull(mClassLoader) }
+    val subtitleTypeClass by Weak { mHookInfo["class_subtitle_type"]?.findClassOrNull(mClassLoader) }
 
     val ellipsizingTextViewClass by Weak {
         "com.bilibili.bplus.followingcard.widget.EllipsizingTextView".findClassOrNull(
@@ -948,10 +949,12 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
             findDynamicDescHolderListener()
         }.checkConjunctiveOrPut("classes_desc_copy_view", "method_desc_copy") {
             findDescCopyView()
-        }.checkOrPut("class_video_subtitle") {
-            findVideoSubtitleClass()
-        }.checkOrPut("class_subtitle_item") {
-            findSubtitleItemClass()
+        }.checkConjunctiveOrPut(
+            "class_video_subtitle",
+            "class_subtitle_item",
+            "class_subtitle_type"
+        ) {
+            findVideoSubtitleClasses()
         }.checkOrPut("class_bangumi_uniform_season") {
             findBangumiUniformSeason()
         }
@@ -1514,14 +1517,16 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
         }
     }
 
-    private fun findVideoSubtitleClass(): String? {
-        val regex = "^com\\.bapis\\.bilibili\\.community\\.service\\.\\w+\\.\\w+\\.VideoSubtitle$".toRegex()
-        return classesList.firstOrNull { it.matches(regex) }
-    }
-
-    private fun findSubtitleItemClass(): String? {
-        val regex = "^com\\.bapis\\.bilibili\\.community\\.service\\.\\w+\\.\\w+\\.SubtitleItem$".toRegex()
-        return classesList.firstOrNull { it.matches(regex) }
+    private fun findVideoSubtitleClasses(): Array<String?> {
+        val prefix = "com.bapis.bilibili.community.service"
+        val regex =
+            "^com\\.bapis\\.bilibili\\.community\\.service\\.\\w+\\.\\w+\\.(VideoSubtitle|SubtitleItem|SubtitleType)$".toRegex()
+        val classes =
+            classesList.filter { it.startsWith(prefix) }.filter { it.matches(regex) }.toList()
+        val videoSubtitleClass = classes.find { it.endsWith("VideoSubtitle") }
+        val subtitleItemClass = classes.find { it.endsWith("SubtitleItem") }
+        val subtitleTypeClass = classes.find { it.endsWith("SubtitleType") }
+        return arrayOf(videoSubtitleClass, subtitleItemClass, subtitleTypeClass)
     }
 
     private fun findDownloadThreadListener() = classesList.filter {
