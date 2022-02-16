@@ -25,11 +25,12 @@ class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             if (origin.isNotEmpty()) {
                 val origSub = subtitles.find { it?.callMethod("getLan") == origin } ?: return@ret
                 val origSubUrl = origSub.callMethodOrNullAs<String>("getSubtitleUrl") ?: return@ret
+                var origSubId = origSub.callMethodOrNullAs<Long>("getId") ?: 0L
                 val targetSubUrl = Uri.parse(host.format(converter)).buildUpon()
                     .appendQueryParameter("sub_url", origSubUrl)
+                    .appendQueryParameter("sub_id", origSubId.toString())
                     .build().toString()
                 val ccType = subTypeClass.getStaticObjectFieldOrNull("CC") ?: return@ret
-                var origSubId = origSub.callMethodOrNullAs<Long>("getId") ?: 0L
                 val item = subtitleItemClass.new().apply {
                     callMethod("setLan", target)
                     callMethod("setLanDoc", targetDoc)
