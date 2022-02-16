@@ -2,7 +2,6 @@ name: Sync Fork
 
 on:
   schedule:
-    # every 30 minutes
     - cron: '*/30 * * * *'
   workflow_dispatch:
 
@@ -40,7 +39,7 @@ jobs:
           API_ID: ${{ secrets.TELEGRAM_API_ID }}
           API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
           BOT_TOKEN: ${{ secrets.TELEGRAM_BOT }}
-          CHANNEL_ID: ${{ secrets.TELEGRAM_TO }}
+          CHANNEL_ID: ${{ secrets.TELEGRAM_TO_ME }}
           SUCCESS: ${{ job.status == 'success' }}
         run: |
           import asyncio
