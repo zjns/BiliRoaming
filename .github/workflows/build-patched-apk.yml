@@ -1,4 +1,4 @@
-name: Build patched apk
+name: Build Patched APK
 
 on:
   workflow_run:
@@ -23,18 +23,19 @@ jobs:
           echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
           echo "/usr/local/lib/android/sdk/build-tools/32.0.0" >> $GITHUB_PATH
 
-      - name: Setup python
+      - name: Setup Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.9.x'
 
-      - name: Prepare python packages
+      - name: Prepare Python packages
         run: |
+          pip install -U pip
           pip install -U wheel
           pip install -U pyrogram tgcrypto
 
       - name: Download release artifact
-        uses: actions/github-script@v5
+        uses: actions/github-script@v6
         with:
           script: |
             let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
@@ -62,10 +63,85 @@ jobs:
           module_apk=`echo BiliRoaming_*.apk`
           echo "MODULE_APK=$module_apk" >> $GITHUB_ENV
 
+      - name: Get latest version
+        id: get_info
+        run: |
+          pip3 install -U urllib3
+          py_get_ver_info=$(cat <<EOM
+          import json
+          from urllib3 import PoolManager
+
+          http = PoolManager()
+          url = 'https://app.bilibili.com/x/v2/version/fawkes/upgrade'
+          params = {
+            'abi': 'arm64-v8a',
+            'appid': 'tv.danmaku.bili',
+            'appkey': '1d8b6e7d45233436',
+            'build': '6600300',
+            'channel': 'master',
+            'env': 'prod',
+            'iv': '6600310',
+            'mobi_app': 'android',
+            'nt': '1',
+            'ov': '31',
+            'platform': 'android',
+            'sn': '7796011',
+            'vn': '6.60.0',
+          }
+          headers = {
+            'user-agent': 'Mozilla/5.0 BiliDroid/6.60.0 (bbcallen@gmail.com)',
+            'app-key': 'android64',
+            'env': 'prod',
+            'buvid': 'XX61AAD69F83AE28E1FA13EDEFCA9431F1C02',
+            'cache-control': 'no-cache',
+          }
+          req = http.request('GET', url, params, headers)
+          resp = json.loads(req.data.decode('utf-8'))
+          try:
+            content = resp['data']['content']
+            ver = resp['data']['version']
+            ver_code = resp['data']['version_code']
+            url = resp['data']['url']
+            size = resp['data']['size']
+            md5 = resp['data']['md5']
+            result = f'{content}|{ver}|{ver_code}|{url}|{size}|{md5}'
+            print(result.replace('\n', r'\n'))
+          except Exception:
+            print('')
+          EOM
+          )
+
+          ver_info="`python3 -c "$py_get_ver_info"`"
+          if [ -z "$ver_info" ]; then
+            exit 0
+          fi
+
+          OLD_IFS="$IFS"
+          IFS="|"
+          infos=($ver_info)
+          IPS="$OLD_IFS"
+          n_changelog="${infos[0]}"
+          n_ver="${infos[1]}"
+          n_ver_code="${infos[2]}"
+          n_url="${infos[3]}"
+          n_size="${infos[4]}"
+          n_md5="${infos[5]}"
+
+          echo "::set-output name=changelog::$n_changelog"
+          echo "::set-output name=ver::$n_ver"
+          echo "::set-output name=ver_code::$n_ver_code"
+          echo "::set-output name=url::$n_url"
+          echo "::set-output name=size::$n_size"
+          echo "::set-output name=md5::$n_md5"
+
       - name: Download bilibili apk
-        run: wget -nv -O Bilibili.apk https://dl.hdslb.com/mobile/latest/iBiliPlayer-bilih5.apk
+        if: steps.get_info.outputs.url != ''
+        run: |
+          #wget -nv -O Bilibili.apk https://dl.hdslb.com/mobile/latest/iBiliPlayer-bilih5.apk
+          wget -nv -O Bilibili.apk ${{ steps.get_info.outputs.url }}
 
       - name: Get app info
+        if: steps.get_info.outputs.url != ''
         run: |
           echo "VER_CODE=`aapt dump badging Bilibili.apk | awk -F "[ =']" '$6 == "versionCode" {print $8}'`" >> $GITHUB_ENV
           echo "VER_NAME=`aapt dump badging Bilibili.apk | awk -F "[ =']" '$10 == "versionName" {print $12}'`" >> $GITHUB_ENV
@@ -73,15 +149,18 @@ jobs:
           echo "M_VER_NAME=`aapt dump badging $MODULE_APK | awk -F "[ =']" '$10 == "versionName" {print $12}'`" >> $GITHUB_ENV
 
       - name: Append version
+        if: steps.get_info.outputs.url != ''
         run: |
           mv Bilibili.apk Bilibili-v$VER_NAME.apk
           echo "BILIBILI_NAME=Bilibili-v$VER_NAME" >> $GITHUB_ENV
           echo "BILIBILI_APK=Bilibili-v$VER_NAME.apk" >> $GITHUB_ENV
 
       - name: Download jar patcher
+        if: steps.get_info.outputs.url != ''
         run: wget -nv -O lspatch.jar https://github.com/LSPosed/LSPatch/releases/latest/download/lspatch.jar
 
       - name: Apply patch
+        if: steps.get_info.outputs.url != ''
         run: |
           java -jar lspatch.jar -m $MODULE_APK --sigbypasslv 2 $BILIBILI_APK
           patched_apk=`echo $BILIBILI_NAME-*.apk`
@@ -91,34 +170,56 @@ jobs:
 
       - name: Send to Telegram
         shell: python
+        if: steps.get_info.outputs.url != ''
         env:
           API_ID: ${{ secrets.TELEGRAM_API_ID }}
           API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
-          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT }}
           CHANNEL_ID: ${{ secrets.TELEGRAM_TO }}
+          CHANNEL_ID_ME: ${{ secrets.TELEGRAM_TO_ME }}
+          SESSION: ${{ secrets.TELEGRAM_SESSION }}
+          RUN_URL: ${{ format('{0}/{1}/actions/runs/{2}', github.server_url, github.repository, github.run_id) }}
         run: |
           import asyncio
           import os
           from pyrogram import Client
           async def main():
+            session = os.environ["SESSION"]
             bot = Client(
-              ":memory:",
+              session,
               api_id=os.environ["API_ID"],
               api_hash=os.environ["API_HASH"],
-              bot_token=os.environ["BOT_TOKEN"],
             )
             async with bot:
               ver_name = os.environ["VER_NAME"]
               ver_code = os.environ["VER_CODE"]
               m_ver_name = os.environ["M_VER_NAME"]
+              m_ver_code = os.environ["M_VER_CODE"]
               channel_id = int(os.environ["CHANNEL_ID"])
-              caption = f"Bilibili: {ver_name} ({ver_code})\nBiliRoaming: {m_ver_name} #Bilibili"
-              document = os.environ['PATCHED_APK']
-              await bot.send_document(
-                chat_id=channel_id,
+              channel_id_me = int(os.environ["CHANNEL_ID_ME"])
+              document = os.environ["PATCHED_APK"]
+              msg_p1 = "#Bilibili #BiliRoaming"
+              msg_p2 = "发现新版本漫游！"
+              msg_p3 = "内置增强版漫游：`添加简繁字幕生成选项`"
+              msg_p4 = f"Bilibili: {ver_name} ({ver_code}) arm64-v8a\nBiliRoaming: {m_ver_name} ({m_ver_code})"
+              msg_p5 = f"Auto generated by [me]({os.environ['RUN_URL']})."
+              caption = "{}\n{}\n\n{}\n{}\n{}".format(msg_p1, msg_p2, msg_p3, msg_p4, msg_p5).replace("字幕", "ZM")
+              result = await bot.send_document(
+                chat_id=channel_id_me,
                 document=document,
                 caption=caption,
                 parse_mode="markdown",
+              )
+              file_id = result.document.file_id
+              result = await bot.send_document(
+                chat_id=channel_id,
+                document=file_id,
+                caption=caption,
+                parse_mode="markdown",
+              )
+              await bot.forward_messages(
+                chat_id="biliroaming_chat",
+                from_chat_id=channel_id,
+                message_ids=result.message_id,
               )
           async def wait():
             try:
