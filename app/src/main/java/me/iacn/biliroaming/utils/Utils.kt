@@ -106,6 +106,9 @@ val platform by lazy {
         }
 }
 
+val Any?.isNull get() = this == null
+val Any?.notNull get() = this != null
+
 val logFile by lazy { File(currentContext.externalCacheDir, "log.txt") }
 
 val oldLogFile by lazy { File(currentContext.externalCacheDir, "old_log.txt") }
