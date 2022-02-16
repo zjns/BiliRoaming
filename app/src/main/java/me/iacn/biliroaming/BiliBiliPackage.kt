@@ -18,6 +18,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import dalvik.system.BaseDexClassLoader
 import me.iacn.biliroaming.utils.*
+import org.json.JSONObject
 import java.io.*
 import java.lang.reflect.Constructor
 import java.lang.reflect.Modifier
@@ -959,7 +960,7 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
             findBangumiUniformSeason()
         }
 
-        Log.d(mHookInfo.filterKeys { it != "map_ids" })
+        Log.d("Hook info: " + JSONObject(mHookInfo.minus("map_ids")))
         Log.d("Check hook info completed: needUpdate = $needUpdate")
         return needUpdate
     }
@@ -1519,13 +1520,21 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
 
     private fun findVideoSubtitleClasses(): Array<String?> {
         val prefix = "com.bapis.bilibili.community.service"
-        val regex =
-            "^com\\.bapis\\.bilibili\\.community\\.service\\.\\w+\\.\\w+\\.(VideoSubtitle|SubtitleItem|SubtitleType)$".toRegex()
-        val classes =
-            classesList.filter { it.startsWith(prefix) }.filter { it.matches(regex) }.toList()
-        val videoSubtitleClass = classes.find { it.endsWith("VideoSubtitle") }
-        val subtitleItemClass = classes.find { it.endsWith("SubtitleItem") }
-        val subtitleTypeClass = classes.find { it.endsWith("SubtitleType") }
+        var videoSubtitleClass = "$prefix.dm.v1.VideoSubtitle"
+            .takeIf { it.findClassOrNull(mClassLoader).notNull }
+        var subtitleItemClass = "$prefix.dm.v1.SubtitleItem"
+            .takeIf { it.findClassOrNull(mClassLoader).notNull }
+        var subtitleTypeClass = "$prefix.dm.v1.SubtitleType"
+            .takeIf { it.findClassOrNull(mClassLoader).notNull }
+        if (videoSubtitleClass.isNull || subtitleItemClass.isNull || subtitleTypeClass.isNull) {
+            val regex =
+                "^com\\.bapis\\.bilibili\\.community\\.service\\.\\w+\\.\\w+\\.(VideoSubtitle|SubtitleItem|SubtitleType)$".toRegex()
+            val classes =
+                classesList.filter { it.startsWith(prefix) }.filter { it.matches(regex) }.toList()
+            videoSubtitleClass = classes.find { it.endsWith("VideoSubtitle") }
+            subtitleItemClass = classes.find { it.endsWith("SubtitleItem") }
+            subtitleTypeClass = classes.find { it.endsWith("SubtitleType") }
+        }
         return arrayOf(videoSubtitleClass, subtitleItemClass, subtitleTypeClass)
     }
 
