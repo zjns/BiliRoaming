@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '*/30 1-10 * * 1-5'
+  push:
+    branches: [me]
 
 jobs:
   check:
@@ -12,6 +14,7 @@ jobs:
 
     outputs:
       new_version: ${{ steps.check.outputs.new_version }}
+      new_my: ${{ steps.check.outputs.new_my }}
       changelog: ${{ steps.check.outputs.changelog }}
       ver: ${{ steps.check.outputs.ver }}
       ver_code: ${{ steps.check.outputs.ver_code }}
@@ -41,17 +44,23 @@ jobs:
         uses: actions/cache@v2
         with:
           path: version
-          key: cache-version-V30-${{ steps.get-random.outputs.random }}
-          restore-keys: cache-version-V30
+          key: cache-version-V35-${{ steps.get-random.outputs.random }}
+          restore-keys: cache-version-V35
 
       - name: Check version
         id: check
         run: |
           if [ -f "version" ]; then
-            ver=`awk '$1 == "ver" {print $2}' version`
-            ver_code=`awk '$1 == "ver_code" {print $2}' version`
-            sn=`awk '$1 == "sn" {print $2}' version`
-            iv=`awk '$1 == "iv" {print $2}' version`
+            changelog=`awk -F "=" '$1 == "changelog" {print $2}' version`
+            ver=`awk -F "=" '$1 == "ver" {print $2}' version`
+            ver_code=`awk -F "=" '$1 == "ver_code" {print $2}' version`
+            url=`awk -F "=" '$1 == "url" {print $2}' version`
+            size=`awk -F "=" '$1 == "size" {print $2}' version`
+            md5=`awk -F "=" '$1 == "md5" {print $2}' version`
+            sn=`awk -F "=" '$1 == "sn" {print $2}' version`
+            iv=`awk -F "=" '$1 == "iv" {print $2}' version`
+            cycle=`awk -F "=" '$1 == "cycle" {print $2}' version`
+            my_code=`awk -F "=" '$1 == "my_code" {print $2}' version`
           else
             ver="6.60.0"; ver_code="6600300"; sn="7796011"; iv="6600310"
           fi
@@ -115,8 +124,25 @@ jobs:
           if [ -z "$ver_info" ]; then
             exit 0
           elif [ "$ver_info" = "no" ]; then
-            echo "Not found new version."
+            echo "Not found new bilibili."
             echo "::set-output name=new_version::0"
+            n_my_code=`awk -F "=" '$1 == "appVerCode" {print $2}' gradle.properties`
+            if [ $n_my_code -gt $my_code ]; then
+              echo "Found new module."
+              sed -r -i "s/(my_code)=.*/\1=$n_my_code/" version
+              echo "::set-output name=new_my::1"
+              echo "::set-output name=changelog::$changelog"
+              echo "::set-output name=ver::$ver"
+              echo "::set-output name=ver_code::$ver_code"
+              echo "::set-output name=url::$url"
+              echo "::set-output name=size::$size"
+              echo "::set-output name=md5::$md5"
+              echo "::set-output name=sn::$sn"
+              echo "::set-output name=iv::$iv"
+              echo "::set-output name=cycle::$cycle"
+            else
+              echo "::set-output name=new_my::0"
+            fi
             exit 0
           fi
 
@@ -138,14 +164,16 @@ jobs:
           echo "Changelog: $n_changelog"
           echo "Download url: $n_url"
 
-          echo "ver $n_ver" > version
-          echo "ver_code $n_ver_code" >> version
-          echo "size $n_size" >> version
-          echo "md5 $n_md5" >> version
-          echo "sn $n_sn" >> version
-          echo "iv $n_iv" >> version
-          echo "cycle $n_cycle" >> version
-          echo "url $n_url" >> version
+          echo "changelog=$n_changelog" > version
+          echo "ver=$n_ver" >> version
+          echo "ver_code=$n_ver_code" >> version
+          echo "url=$n_url" >> version
+          echo "size=$n_size" >> version
+          echo "md5=$n_md5" >> version
+          echo "sn=$n_sn" >> version
+          echo "iv=$n_iv" >> version
+          echo "cycle=$n_cycle" >> version
+          echo "my_code=$n_my_code" >> version
 
           echo "::set-output name=new_version::1"
           echo "::set-output name=changelog::$n_changelog"
@@ -162,7 +190,7 @@ jobs:
     name: Build Module
     runs-on: ubuntu-latest
     needs: check
-    if: success() && needs.check.outputs.new_version == '1'
+    if: needs.check.outputs.new_version == '1' || needs.check.outputs.new_my == '1'
 
     steps:
       - name: Checkout
@@ -212,7 +240,7 @@ jobs:
     name: Patch APK
     runs-on: ubuntu-latest
     needs: [check, module]
-    if: success() && needs.check.outputs.new_version == '1'
+    if: needs.check.outputs.new_version == '1' || needs.check.outputs.new_my == '1'
 
     steps:
       - name: Setup JDK 11
@@ -258,7 +286,7 @@ jobs:
 
       - name: Append version
         run: |
-          sn = "${{ needs.check.outputs.sn }}"
+          sn="${{ needs.check.outputs.sn }}"
           mkdir patched
           mv Bilibili.apk patched/Bili-v$VER_NAME-b$sn-official.apk
           echo "BILIBILI_NAME=Bili-v$VER_NAME-b$sn" >> $GITHUB_ENV
@@ -283,8 +311,30 @@ jobs:
           mv $patched_apk $renamed
           echo "PATCHED_APK_NON=$renamed" >> $GITHUB_ENV
 
-      - name: Send to Telegram
+      - name: Calculate size and md5
+        id: extra-info
+        run: |
+          size=`du -b $PATCHED_APK | awk '{print $1}'`
+          md5=`md5sum $PATCHED_APK | awk '{print $1}'`
+          build_time=`date +%s`
+          echo "::set-output name=size::$size"
+          echo "::set-output name=md5::$md5"
+          echo "::set-output name=build_time::$build_time"
+
+      - name: Release patched-buildin apk
+        uses: softprops/action-gh-release@v1
+        with:
+          token: ${{ secrets.HUB_TOKEN }}
+          tag_name: ${{ format('bili-v{0}-b{1}-m{2}', env.VER_NAME, needs.check.outputs.sn, env.M_VER_CODE) }}
+          name: ${{ format('{0} {1} {2} {3} {4} {5} {6} {7}', env.VER_NAME, env.VER_CODE, env.M_VER_NAME, env.M_VER_CODE, needs.check.outputs.sn, steps.extra-info.outputs.size, steps.extra-info.outputs.md5, steps.extra-info.outputs.build_time) }}
+          body: ${{ needs.check.outputs.changelog }}
+          prerelease: false
+          draft: false
+          files: ${{ env.PATCHED_APK }}
+
+      - name: Send to Telegram (New Bilibili)
         shell: python
+        if: needs.check.outputs.new_version == '1'
         env:
           API_ID: ${{ secrets.TELEGRAM_API_ID }}
           API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
@@ -323,6 +373,7 @@ jobs:
               - 以<b>official</b>结尾的为官方原版
               - 以<b>non-module</b>结尾的为<b>无</b>内置模块LSPatch版本
               - 以<b>with-module</b>结尾的为内置增强版模块LSPatch版本，添加了简繁字幕生成选项
+              - <b>内置版可在应用内收到新的内置修改版更新</b>
               """)
               msg_p4 = f"Bilibili: {ver_name} ({ver_code}) 64位 本版第{cycle}次迭代\nBiliRoaming: {m_ver_name} ({m_ver_code})"
               msg_p5 = f"Auto generated by [me]({os.environ['RUN_URL']})."
@@ -347,6 +398,67 @@ jobs:
                 chat_id="biliroaming_chat",
                 from_chat_id=channel_id,
                 message_ids=message_ids,
+              )
+          async def wait():
+            try:
+              await asyncio.wait_for(main(), timeout=600)
+            except asyncio.TimeoutError:
+              print("message send timeout!!!")
+              exit(1)
+          asyncio.run(wait())
+
+      - name: Send to Telegram (New module)
+        shell: python
+        if: needs.check.outputs.new_version == '0' && needs.check.outputs.new_my == '1'
+        env:
+          API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          CHANNEL_ID: ${{ secrets.TELEGRAM_TO }}
+          CHANNEL_ID_ME: ${{ secrets.TELEGRAM_TO_ME }}
+          SESSION: ${{ secrets.TELEGRAM_SESSION }}
+          RUN_URL: ${{ format('{0}/{1}/actions/runs/{2}', github.server_url, github.repository, github.run_id) }}
+        run: |
+          import asyncio
+          import inspect
+          import os
+          from pyrogram import Client
+          from pyrogram.types.input_media import InputMediaDocument
+          async def main():
+            session = os.environ["SESSION"]
+            bot = Client(
+              session,
+              api_id=os.environ["API_ID"],
+              api_hash=os.environ["API_HASH"],
+            )
+            async with bot:
+              ver_name = os.environ["VER_NAME"]
+              ver_code = os.environ["VER_CODE"]
+              m_ver_name = os.environ["M_VER_NAME"]
+              m_ver_code = os.environ["M_VER_CODE"]
+              channel_id = int(os.environ["CHANNEL_ID"])
+              channel_id_me = int(os.environ["CHANNEL_ID_ME"])
+              document = os.environ["PATCHED_APK"]
+              msg_p1 = "#Bilibili #BiliRoaming"
+              msg_p2 = "发现新版本漫游！"
+              msg_p3 = "内置增强版漫游：`添加简繁字幕生成选项`\n<b>可在应用内收到新的内置修改版更新</b>"
+              msg_p4 = f"Bilibili: {ver_name} ({ver_code}) 64位\nBiliRoaming: {m_ver_name} ({m_ver_code})"
+              msg_p5 = f"Auto generated by [me]({os.environ['RUN_URL']})."
+              caption = "{}\n{}\n\n{}\n{}\n{}".format(msg_p1, msg_p2, msg_p3, msg_p4, msg_p5).replace("字幕", "ZM")
+              result = await bot.send_document(
+                chat_id=channel_id_me,
+                document=document,
+                caption=caption,
+              )
+              file_id = result.document.file_id
+              result = await bot.send_document(
+                chat_id=channel_id,
+                document=file_id,
+                caption=caption,
+              )
+              await bot.forward_messages(
+                chat_id="biliroaming_chat",
+                from_chat_id=channel_id,
+                message_ids=result.message_id,
               )
           async def wait():
             try:
