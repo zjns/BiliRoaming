@@ -241,6 +241,8 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val videoSubtitleClass by Weak { mHookInfo["class_video_subtitle"]?.findClassOrNull(mClassLoader) }
     val subtitleItemClass by Weak { mHookInfo["class_subtitle_item"]?.findClassOrNull(mClassLoader) }
     val subtitleTypeClass by Weak { mHookInfo["class_subtitle_type"]?.findClassOrNull(mClassLoader) }
+    val updaterOptionsClass get() = mHookInfo["class_updater_options"]
+    val upgradeApiMethod get() = mHookInfo["method_upgrade_api"]
 
     val ellipsizingTextViewClass by Weak {
         "com.bilibili.bplus.followingcard.widget.EllipsizingTextView".findClassOrNull(
@@ -558,6 +560,14 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                     } else it
                 }
             ).use { helper ->
+                val upgradeApiMethod = helper.findMethodUsingString(
+                    "https://app.bilibili.com/x/v2/version/fawkes/upgrade",
+                    true, -1, 0, null, -1, null, null, null, true
+                ).firstOrNull()?.let {
+                    helper.decodeMethodIndex(it)
+                }
+                mHookInfo["class_updater_options"] = upgradeApiMethod?.declaringClass?.name
+                mHookInfo["method_upgrade_api"] = upgradeApiMethod?.name
                 val class_bangumi_uniform_season = helper.findMethodUsingString(
                     "BangumiAllButton",
                     true, -1, 0, null, -1, null, null, null, true
