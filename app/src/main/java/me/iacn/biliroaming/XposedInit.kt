@@ -83,6 +83,9 @@ class XposedInit : IXposedHookLoadPackage, IXposedHookZygoteInit {
                     if (BuildConfig.DEBUG) {
                         startHook(SSLHook(lpparam.classLoader))
                     }
+                    if (isLSPBuiltIn) {
+                        startHook(AppUpgradeHook(lpparam.classLoader))
+                    }
                     startHook(HintHook(lpparam.classLoader))
                     startHook(BangumiSeasonHook(lpparam.classLoader))
                     startHook(BangumiPlayUrlHook(lpparam.classLoader))
