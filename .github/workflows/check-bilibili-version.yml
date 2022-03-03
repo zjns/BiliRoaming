@@ -7,6 +7,10 @@ on:
   push:
     branches: [me]
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   check:
     name: Check Version
@@ -44,8 +48,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: version
-          key: cache-version-V35-${{ steps.get-random.outputs.random }}
-          restore-keys: cache-version-V35
+          key: cache-version-V38-${{ steps.get-random.outputs.random }}
+          restore-keys: cache-version-V38
 
       - name: Check version
         id: check
@@ -120,13 +124,13 @@ jobs:
           EOM
           )
 
+          n_my_code=`awk -F "=" '$1 == "appVerCode" {print $2}' gradle.properties`
           ver_info="`python3 -c "$py_get_ver_info"`"
           if [ -z "$ver_info" ]; then
             exit 0
           elif [ "$ver_info" = "no" ]; then
             echo "Not found new bilibili."
             echo "::set-output name=new_version::0"
-            n_my_code=`awk -F "=" '$1 == "appVerCode" {print $2}' gradle.properties`
             if [ $n_my_code -gt $my_code ]; then
               echo "Found new module."
               sed -r -i "s/(my_code)=.*/\1=$n_my_code/" version
@@ -160,7 +164,7 @@ jobs:
           n_iv="${infos[7]}"
           n_cycle="${infos[8]}"
 
-          echo "Found new version: $n_ver ($n_ver_code) b$n_sn"
+          echo "Found new bilibili: $n_ver ($n_ver_code) b$n_sn"
           echo "Changelog: $n_changelog"
           echo "Download url: $n_url"
 
@@ -300,7 +304,7 @@ jobs:
           echo "Patch with buildin module."
           java -jar lspatch.jar -m $MODULE_APK --sigbypasslv 2 $BILIBILI_APK
           patched_apk=`echo $BILIBILI_NAME-*.apk`
-          renamed=patched/$BILIBILI_NAME-with-module.apk
+          renamed=patched/$BILIBILI_NAME-m$M_VER_CODE-with-module.apk
           mv $patched_apk $renamed
           echo "PATCHED_APK=$renamed" >> $GITHUB_ENV
 
