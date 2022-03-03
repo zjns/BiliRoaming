@@ -7,13 +7,17 @@ on:
   push:
     branches: [me]
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   check:
     name: Check Version
     runs-on: ubuntu-latest
 
     outputs:
-      new_version: ${{ steps.check.outputs.new_version }}
+      new_bili: ${{ steps.check.outputs.new_bili }}
       new_my: ${{ steps.check.outputs.new_my }}
       changelog: ${{ steps.check.outputs.changelog }}
       ver: ${{ steps.check.outputs.ver }}
@@ -44,8 +48,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: version
-          key: cache-version-V35-${{ steps.get-random.outputs.random }}
-          restore-keys: cache-version-V35
+          key: cache-version-V38-${{ steps.get-random.outputs.random }}
+          restore-keys: cache-version-V38
 
       - name: Check version
         id: check
@@ -120,13 +124,13 @@ jobs:
           EOM
           )
 
+          n_my_code=`awk -F "=" '$1 == "appVerCode" {print $2}' gradle.properties`
           ver_info="`python3 -c "$py_get_ver_info"`"
           if [ -z "$ver_info" ]; then
             exit 0
           elif [ "$ver_info" = "no" ]; then
             echo "Not found new bilibili."
-            echo "::set-output name=new_version::0"
-            n_my_code=`awk -F "=" '$1 == "appVerCode" {print $2}' gradle.properties`
+            echo "::set-output name=new_bili::0"
             if [ $n_my_code -gt $my_code ]; then
               echo "Found new module."
               sed -r -i "s/(my_code)=.*/\1=$n_my_code/" version
@@ -160,7 +164,7 @@ jobs:
           n_iv="${infos[7]}"
           n_cycle="${infos[8]}"
 
-          echo "Found new version: $n_ver ($n_ver_code) b$n_sn"
+          echo "Found new bilibili: $n_ver ($n_ver_code) b$n_sn"
           echo "Changelog: $n_changelog"
           echo "Download url: $n_url"
 
@@ -175,7 +179,7 @@ jobs:
           echo "cycle=$n_cycle" >> version
           echo "my_code=$n_my_code" >> version
 
-          echo "::set-output name=new_version::1"
+          echo "::set-output name=new_bili::1"
           echo "::set-output name=changelog::$n_changelog"
           echo "::set-output name=ver::$n_ver"
           echo "::set-output name=ver_code::$n_ver_code"
@@ -190,7 +194,7 @@ jobs:
     name: Build Module
     runs-on: ubuntu-latest
     needs: check
-    if: needs.check.outputs.new_version == '1' || needs.check.outputs.new_my == '1'
+    if: needs.check.outputs.new_bili == '1' || needs.check.outputs.new_my == '1'
 
     steps:
       - name: Checkout
@@ -240,7 +244,7 @@ jobs:
     name: Patch APK
     runs-on: ubuntu-latest
     needs: [check, module]
-    if: needs.check.outputs.new_version == '1' || needs.check.outputs.new_my == '1'
+    if: needs.check.outputs.new_bili == '1' || needs.check.outputs.new_my == '1'
 
     steps:
       - name: Setup JDK 11
@@ -297,14 +301,14 @@ jobs:
 
       - name: Apply patch
         run: |
-          echo "Patch with buildin module."
+          echo "Patch with builtin module."
           java -jar lspatch.jar -m $MODULE_APK --sigbypasslv 2 $BILIBILI_APK
           patched_apk=`echo $BILIBILI_NAME-*.apk`
-          renamed=patched/$BILIBILI_NAME-with-module.apk
+          renamed=patched/$BILIBILI_NAME-m$M_VER_CODE-with-module.apk
           mv $patched_apk $renamed
           echo "PATCHED_APK=$renamed" >> $GITHUB_ENV
 
-          echo "Patch without buildin module."
+          echo "Patch without builtin module."
           java -jar lspatch.jar --sigbypasslv 2 --manager $BILIBILI_APK
           patched_apk=`echo $BILIBILI_NAME-*.apk`
           renamed=patched/$BILIBILI_NAME-non-module.apk
@@ -321,7 +325,7 @@ jobs:
           echo "::set-output name=md5::$md5"
           echo "::set-output name=build_time::$build_time"
 
-      - name: Release patched-buildin apk
+      - name: Release patched-builtin apk
         uses: softprops/action-gh-release@v1
         with:
           token: ${{ secrets.HUB_TOKEN }}
@@ -334,7 +338,7 @@ jobs:
 
       - name: Send to Telegram (New Bilibili)
         shell: python
-        if: needs.check.outputs.new_version == '1'
+        if: needs.check.outputs.new_bili == '1'
         env:
           API_ID: ${{ secrets.TELEGRAM_API_ID }}
           API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
@@ -409,7 +413,7 @@ jobs:
 
       - name: Send to Telegram (New module)
         shell: python
-        if: needs.check.outputs.new_version == '0' && needs.check.outputs.new_my == '1'
+        if: needs.check.outputs.new_bili == '0' && needs.check.outputs.new_my == '1'
         env:
           API_ID: ${{ secrets.TELEGRAM_API_ID }}
           API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
