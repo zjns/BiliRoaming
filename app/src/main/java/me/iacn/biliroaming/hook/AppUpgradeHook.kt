@@ -9,9 +9,9 @@ class AppUpgradeHook(private val classLoader: ClassLoader) : BaseHook(classLoade
     private val upgradeApi = "https://www.kofua.top/bapp/version/upgrade/m%s"
 
     override fun startHook() {
-        val updaterOptionsClass = BiliBiliPackage.instance.updaterOptionsClass
-        val upgradeApiMethod = BiliBiliPackage.instance.upgradeApiMethod
-        updaterOptionsClass?.findClass(classLoader)?.replaceMethod(upgradeApiMethod) {
+        val updaterOptionsClass = BiliBiliPackage.instance.updaterOptionsClass ?: return
+        val upgradeApiMethod = BiliBiliPackage.instance.upgradeApiMethod ?: return
+        updaterOptionsClass.findClass(classLoader).replaceMethod(upgradeApiMethod) {
             upgradeApi.format(BuildConfig.VERSION_CODE)
         }
     }
