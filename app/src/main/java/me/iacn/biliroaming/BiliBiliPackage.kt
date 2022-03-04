@@ -244,8 +244,14 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val videoSubtitleClass by Weak { mHookInfo["class_video_subtitle"]?.findClassOrNull(mClassLoader) }
     val subtitleItemClass by Weak { mHookInfo["class_subtitle_item"]?.findClassOrNull(mClassLoader) }
     val subtitleTypeClass by Weak { mHookInfo["class_subtitle_type"]?.findClassOrNull(mClassLoader) }
-    val updaterOptionsClass get() = mHookInfo["class_updater_options"]
-    val upgradeApiMethod get() = mHookInfo["method_upgrade_api"]
+    val updaterOptionsClass get() = if (!BuildConfig.useDexHelper) "tv.danmaku.bili.update.api.UpdaterOptions" else mHookInfo["class_updater_options"]
+    val upgradeApiMethod
+        get() = if (!BuildConfig.useDexHelper) updaterOptionsClass?.findClassOrNull(mClassLoader)
+            ?.let { clazz ->
+                clazz.declaredMethods.firstOrNull {
+                    it.parameterTypes.isEmpty() && it.returnType == String::class.java
+                }
+            }?.name else mHookInfo["method_upgrade_api"]
 
     val ellipsizingTextViewClass by Weak {
         "com.bilibili.bplus.followingcard.widget.EllipsizingTextView".findClassOrNull(
