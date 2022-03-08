@@ -428,7 +428,7 @@ class BangumiPlayUrlHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     (0 until it.length()).map { idx -> it.optInt(idx) }
                 }
                 val type = jsonContent.optString("type")
-                val formatMap = HashMap<Int, JSONObject>()
+                val formatMap = mutableMapOf<Int, JSONObject>()
                 for (format in jsonContent.optJSONArray("support_formats").orEmpty()) {
                     formatMap[format.optInt("quality")] = format
                 }
@@ -440,7 +440,7 @@ class BangumiPlayUrlHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     format = jsonContent.optString("format")
 
                     if (type == "DASH") {
-                        val audioIds = ArrayList<Int>()
+                        val audioIds = mutableListOf<Int>()
                         for (audio in jsonContent.optJSONObject("dash")?.optJSONArray("audio")
                             .orEmpty()) {
                             dashAudio += dashItem {
