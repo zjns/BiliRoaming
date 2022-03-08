@@ -35,8 +35,8 @@ class EnvHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         false
                     )
                 ) config.trueValue else config.falseValue)
-                    ?.let { result.edit().putString(config.key, it).apply() }
-                    ?: result.edit().remove(config.key).apply()
+                    ?.let { result.edit { putString(config.key, it) } }
+                    ?: result.edit { remove(config.key) }
             }
         }
 
