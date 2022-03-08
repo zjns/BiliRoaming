@@ -172,7 +172,7 @@ class CustomThemeHook(classLoader: ClassLoader) : BaseHook(classLoader) {
 
         private var customColor: Int
             get() = biliPrefs.getInt(CUSTOM_COLOR_KEY, DEFAULT_CUSTOM_COLOR)
-            set(value) = biliPrefs.edit().putInt(CUSTOM_COLOR_KEY, value).apply()
+            set(value) = biliPrefs.edit { putInt(CUSTOM_COLOR_KEY, value) }
 
         private val currentKey: Int
             get() = biliPrefs.getInt(CURRENT_COLOR_KEY, 0)

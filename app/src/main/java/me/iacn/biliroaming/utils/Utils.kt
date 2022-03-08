@@ -2,6 +2,7 @@ package me.iacn.biliroaming.utils
 
 import android.app.AndroidAppHelper
 import android.content.Context
+import android.content.SharedPreferences
 import android.content.pm.PackageManager.GET_META_DATA
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -18,6 +19,9 @@ import java.lang.ref.WeakReference
 import java.math.BigInteger
 import java.net.URL
 import java.util.*
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 import kotlin.reflect.KProperty
 
 class Weak(val initializer: () -> Class<*>?) {
@@ -45,9 +49,9 @@ fun bv2av(bv: String): Long {
     "fZodR9XQDSUm21yCkr6zBqiveYah8bt4xsWpHnJE7jL5VG3guMTKNPAwcF".forEachIndexed { i, b ->
         table[b] = i
     }
-    val r = intArrayOf(11, 10, 3, 8, 4, 6).withIndex().map { (i, p) ->
+    val r = intArrayOf(11, 10, 3, 8, 4, 6).withIndex().sumOf { (i, p) ->
         table[bv[p]]!! * BigInteger.valueOf(58).pow(i).toLong()
-    }.sum()
+    }
     return (r - 8728348608).xor(177451812)
 }
 
@@ -105,6 +109,24 @@ val platform by lazy {
 val Any?.isNull get() = this == null
 val Any?.notNull get() = this != null
 
+@OptIn(ExperimentalContracts::class)
+inline fun Boolean.yes(block: () -> Unit): Boolean {
+    contract {
+        callsInPlace(block, InvocationKind.AT_MOST_ONCE)
+    }
+    if (this) block()
+    return this
+}
+
+@OptIn(ExperimentalContracts::class)
+inline fun Boolean.no(block: () -> Unit): Boolean {
+    contract {
+        callsInPlace(block, InvocationKind.AT_MOST_ONCE)
+    }
+    if (!this) block()
+    return this
+}
+
 val logFile by lazy { File(currentContext.externalCacheDir, "log.txt") }
 
 val oldLogFile by lazy { File(currentContext.externalCacheDir, "old_log.txt") }
@@ -116,6 +138,10 @@ val sPrefs
 @Suppress("DEPRECATION")
 val sCaches
     get() = currentContext.getSharedPreferences("biliroaming_cache", Context.MODE_MULTI_PROCESS)!!
+
+inline fun SharedPreferences.edit(apply: Boolean = true, action: SharedPreferences.Editor.() -> Unit) {
+    edit().apply(action).apply { if (apply) apply() else commit() }
+}
 
 fun checkErrorToast(json: JSONObject, isCustomServer: Boolean = false) {
     if (json.optInt("code", 0) != 0) {

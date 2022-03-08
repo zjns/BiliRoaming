@@ -8,6 +8,7 @@ import android.widget.Button
 import android.widget.EditText
 import me.iacn.biliroaming.XposedInit.Companion.moduleRes
 import me.iacn.biliroaming.utils.Log
+import me.iacn.biliroaming.utils.edit
 
 class HomeFilterDialog(val activity: Activity, prefs: SharedPreferences) :
     AlertDialog.Builder(activity) {
@@ -115,7 +116,7 @@ class HomeFilterDialog(val activity: Activity, prefs: SharedPreferences) :
         }
 
         setPositiveButton(android.R.string.ok) { _, _ ->
-            prefs.edit().apply {
+            prefs.edit {
                 putLong(lovePlayCount.tag.toString(), lovePlayCount.text.toString().toLong())
                 putInt(shortDuration.tag.toString(), shortDuration.text.toString().toInt())
                 putInt(longDuration.tag.toString(), longDuration.text.toString().toInt())
@@ -125,7 +126,7 @@ class HomeFilterDialog(val activity: Activity, prefs: SharedPreferences) :
                 putString(upname.tag.toString(), upname.text.toString())
                 putString(rname.tag.toString(), rname.text.toString())
                 putString(tname.tag.toString(), tname.text.toString())
-            }.apply()
+            }
             Log.toast("保存成功 重启后生效")
         }
 
