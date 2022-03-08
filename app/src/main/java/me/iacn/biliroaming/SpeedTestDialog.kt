@@ -23,6 +23,7 @@ import me.iacn.biliroaming.network.BiliRoamingApi.getPlayUrl
 import me.iacn.biliroaming.network.BiliRoamingApi.mainlandTestParams
 import me.iacn.biliroaming.network.BiliRoamingApi.overseaTestParams
 import me.iacn.biliroaming.utils.Log
+import me.iacn.biliroaming.utils.edit
 import me.iacn.biliroaming.utils.sPrefs
 import me.iacn.biliroaming.utils.toJSONObject
 import java.net.URL
@@ -105,7 +106,7 @@ class SpeedTestDialog(private val pref: ListPreference, activity: Activity) :
             val (name, value) = (view.tag as SpeedTestAdapter.ViewHolder).run { name to value }
             Log.d("Use UPOS $name: $value")
             pref.value = value
-            sPrefs.edit().putString(pref.key, value).apply()
+            sPrefs.edit { putString(pref.key, value) }
             Log.toast("已启用UPOS服务器：${name}")
         }
 

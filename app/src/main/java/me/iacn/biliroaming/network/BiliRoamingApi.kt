@@ -545,11 +545,10 @@ object BiliRoamingApi {
                             null
                         ) != area
                     ) {
-                        sCaches.edit().run {
+                        sCaches.edit {
                             putString(seasonId, area)
                             lastSeasonInfo["ep_ids"]?.split(";")
                                 ?.forEach { epId -> putString("ep$epId", area) }
-                            apply()
                         }
                     }
                     return if (area == "th") fixThailandPlayurl(it) else it

@@ -13,6 +13,7 @@ import android.widget.EditText
 import android.widget.TextView
 import me.iacn.biliroaming.XposedInit.Companion.moduleRes
 import me.iacn.biliroaming.hook.SubtitleHook
+import me.iacn.biliroaming.utils.edit
 
 class CustomSubtitleDialog(val activity: Activity, prefs: SharedPreferences) :
     AlertDialog.Builder(activity) {
@@ -84,7 +85,7 @@ class CustomSubtitleDialog(val activity: Activity, prefs: SharedPreferences) :
         }
 
         setPositiveButton(android.R.string.ok) { _, _ ->
-            prefs.edit().apply {
+            prefs.edit {
                 putString(fontColor.tag.toString(), fontColor.text.toString())
                 putString(backgroundColor.tag.toString(), backgroundColor.text.toString())
                 putInt(fontSize.tag.toString(), fontSize.text.toString().toInt())
@@ -92,7 +93,7 @@ class CustomSubtitleDialog(val activity: Activity, prefs: SharedPreferences) :
                 putString(strokeColor.tag.toString(), strokeColor.text.toString())
                 putFloat(strokeWidth.tag.toString(), strokeWidth.text.toString().toFloat())
                 putBoolean(fixBreak.tag.toString(), fixBreak.isChecked)
-            }.apply()
+            }
         }
 
         setTitle("自定义字幕样式")
