@@ -309,7 +309,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             if (prefs.getBoolean("hidden", false) || counter == 7) return true
             counter++
             if (counter == 7) {
-                prefs.edit()?.putBoolean("hidden", true)?.apply()
+                prefs.edit { putBoolean("hidden", true) }
                 Log.toast("已开启隐藏功能，重启应用生效", true)
             } else if (counter >= 4) {
                 Log.toast("再按${7 - counter}次开启隐藏功能", true)
@@ -343,12 +343,14 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                     editTexts.forEach {
                         val host = it.text.toString()
                         if (host.isNotEmpty())
-                            prefs.edit().putString(
-                                it.tag.toString(),
-                                host.replace(Regex("^https?://"), "")
-                            ).apply()
+                            prefs.edit {
+                                putString(
+                                    it.tag.toString(),
+                                    host.replace(Regex("^https?://"), "")
+                                )
+                            }
                         else
-                            prefs.edit().remove(it.tag.toString()).apply()
+                            prefs.edit { remove(it.tag.toString()) }
                     }
                 }
                 setNegativeButton("获取公共解析服务器") { _, _ ->
@@ -382,14 +384,14 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                             hideItems.add(it.id ?: "")
                         }
                     }
-                    sPrefs.edit().putStringSet("hided_bottom_items", hideItems).apply()
+                    sPrefs.edit { putStringSet("hided_bottom_items", hideItems) }
                 }
                 setNegativeButton(android.R.string.cancel, null)
                 val names = Array(bottomItems.size) { i ->
                     "${bottomItems[i].name} (${bottomItems[i].id}) (${bottomItems[i].uri})"
                 }
                 setNeutralButton("重置") { _, _ ->
-                    sPrefs.edit().remove("hided_bottom_items").apply()
+                    sPrefs.edit { remove("hided_bottom_items") }
                 }
                 val showings = BooleanArray(bottomItems.size) { i ->
                     bottomItems[i].showing
@@ -452,8 +454,8 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                     editTexts.forEach {
                         val accessKey = it.text.toString()
                         val key = "${it.tag}_accessKey"
-                        if (accessKey.isNotEmpty()) prefs.edit().putString(key, accessKey).apply()
-                        else prefs.edit().remove(key).apply()
+                        if (accessKey.isNotEmpty()) prefs.edit { putString(key, accessKey) }
+                        else prefs.edit { remove(key) }
                     }
                 }
                 show()
@@ -511,14 +513,14 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                             hideItems.add(it.id ?: "")
                         }
                     }
-                    sPrefs.edit().putStringSet("hided_drawer_items", hideItems).apply()
+                    sPrefs.edit { putStringSet("hided_drawer_items", hideItems) }
                 }
                 setNegativeButton(android.R.string.cancel, null)
                 val names = Array(drawerItems.size) { i ->
                     "${drawerItems[i].name} (${drawerItems[i].id}) (${drawerItems[i].uri})"
                 }
                 setNeutralButton("重置") { _, _ ->
-                    sPrefs.edit().remove("hided_drawer_items").apply()
+                    sPrefs.edit { remove("hided_drawer_items") }
                 }
                 val showings = BooleanArray(drawerItems.size) { i ->
                     drawerItems[i].showing
