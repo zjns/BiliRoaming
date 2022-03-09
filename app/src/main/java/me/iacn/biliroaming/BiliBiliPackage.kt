@@ -24,6 +24,7 @@ import java.lang.reflect.Modifier
 import java.lang.reflect.ParameterizedType
 import java.net.URL
 import java.nio.channels.ByteChannel
+import java.util.concurrent.Callable
 import kotlin.math.max
 import kotlin.system.measureTimeMillis
 
@@ -252,6 +253,7 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                     it.parameterTypes.isEmpty() && it.returnType == String::class.java
                 }
             }?.name else mHookInfo["method_upgrade_api"]
+    val appendChannelClass get() = mHookInfo["class_append_channel"]
 
     val ellipsizingTextViewClass by Weak {
         "com.bilibili.bplus.followingcard.widget.EllipsizingTextView".findClassOrNull(
@@ -1035,6 +1037,8 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
             "class_subtitle_type"
         ) {
             findVideoSubtitleClasses()
+        }.checkOrPut("class_append_channel") {
+            findAppendChannelClass()
         }.checkOrPut("class_bangumi_uniform_season") {
             findBangumiUniformSeason()
         }.checkOrPut("class_background_player") {
@@ -1062,7 +1066,7 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
         return needUpdate
     }
 
-    private fun findVideoDetailCallback() :String?{
+    private fun findVideoDetailCallback(): String? {
         val callback = "com.bilibili.okretro.BiliApiDataCallback".findClassOrNull(mClassLoader)
         return classesList.filter {
             it.startsWith("tv.danmaku.bili.ui.video.videodetail.function")
@@ -1713,6 +1717,16 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
             subtitleTypeClass = classes.find { it.endsWith("SubtitleType") }
         }
         return arrayOf(videoSubtitleClass, subtitleItemClass, subtitleTypeClass)
+    }
+
+    private fun findAppendChannelClass() = classesList.filter {
+        it.startsWith("tv.danmaku.bili.update.internal.network.download.UpdateService2$")
+    }.find { name ->
+        name.findClass(mClassLoader).let { clazz ->
+            clazz.interfaces.contentEquals(arrayOf(Callable::class.java)) &&
+                    clazz.declaredFields.size == 2 &&
+                    clazz.declaredFields.any { it.type == File::class.java }
+        }
     }
 
     private fun findDownloadThreadListener() = classesList.filter {
