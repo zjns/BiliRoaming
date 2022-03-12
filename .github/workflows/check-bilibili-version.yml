@@ -124,15 +124,13 @@ jobs:
           EOM
           )
 
+          n_my_ver=`awk -F "=" '$1 == "appVerName" {print $2}' gradle.properties`
           n_my_code=`awk -F "=" '$1 == "appVerCode" {print $2}' gradle.properties`
+          push_event="${{ github.event_name == 'push' }}"
           ver_info="`python3 -c "$py_get_ver_info"`"
-          if [ -z "$ver_info" ]; then
-            exit 0
-          elif [ "$ver_info" = "no" ]; then
-            echo "Not found new bilibili."
-            echo "::set-output name=new_bili::0"
+          function check_module_version(){
             if [ $n_my_code -gt $my_code ]; then
-              echo "Found new module."
+              echo "Found new module: $n_my_ver ($n_my_code)"
               sed -r -i "s/(my_code)=.*/\1=$n_my_code/" version
               echo "::set-output name=new_my::1"
               echo "::set-output name=changelog::$changelog"
@@ -145,8 +143,19 @@ jobs:
               echo "::set-output name=iv::$iv"
               echo "::set-output name=cycle::$cycle"
             else
+              echo "Not found new module."
               echo "::set-output name=new_my::0"
             fi
+          }
+          if [ -z "$ver_info" ]; then
+            exit 0
+          elif [ "$push_event" = "true" ]; then
+            check_module_version
+            exit 0
+          elif [ "$ver_info" = "no" ]; then
+            echo "Not found new bilibili."
+            echo "::set-output name=new_bili::0"
+            check_module_version
             exit 0
           fi
 
@@ -413,7 +422,7 @@ jobs:
 
       - name: Send to Telegram (New module)
         shell: python
-        if: needs.check.outputs.new_bili == '0' && needs.check.outputs.new_my == '1'
+        if: needs.check.outputs.new_my == '1'
         env:
           API_ID: ${{ secrets.TELEGRAM_API_ID }}
           API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
