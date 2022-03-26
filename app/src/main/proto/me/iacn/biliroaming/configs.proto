@@ -178,6 +178,20 @@ message Settings {
   repeated HomeUserCenter home_user_center = 5;
 }
 
+message AppUpgrade {
+  optional Class updater_options = 1;
+  optional Class upgrade_utils = 2;
+  optional Class help_fragment = 3;
+  optional Method upgrade_api = 4;
+  optional Method write_channel = 5;
+}
+
+message VideoSubtitles {
+  optional Class video_subtitle = 1;
+  optional Class subtitle_item = 2;
+  optional Class subtitle_type = 3;
+}
+
 message MusicNotification {
   optional Class abs_music_service = 1;
   optional Class background_player = 2;
@@ -197,6 +211,8 @@ message BiliAccounts {
 
 message HookInfo {
   int64 last_update_time = 1;
+  optional AppUpgrade app_upgrade = 500;
+  optional VideoSubtitles video_subtitles = 501;
   optional MapIds map_ids = 2;
   int32 client_version_code = 3;
   int32 module_version_code = 4;
