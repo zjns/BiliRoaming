@@ -119,6 +119,14 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val playerOnSeekCompleteClass by Weak { mHookInfo.playerCoreService.seekCompleteListener from mClassLoader }
     val kanbanCallbackClass by Weak { mHookInfo.kanBan.class_ from mClassLoader }
     val toastHelperClass by Weak { mHookInfo.toastHelper.class_ from mClassLoader }
+    val updaterOptionsClass by Weak { mHookInfo.appUpgrade.updaterOptions from mClassLoader }
+    val upgradeApiMethod get() = mHookInfo.appUpgrade.upgradeApi.orNull
+    val upgradeUtilsClass by Weak { mHookInfo.appUpgrade.upgradeUtils from mClassLoader }
+    val writeChannelMethod get() = mHookInfo.appUpgrade.writeChannel.orNull
+    val helpFragmentClass by Weak { mHookInfo.appUpgrade.helpFragment from mClassLoader }
+    val videoSubtitleClass by Weak { mHookInfo.videoSubtitles.videoSubtitle from mClassLoader }
+    val subtitleItemClass by Weak { mHookInfo.videoSubtitles.subtitleItem from mClassLoader }
+    val subtitleTypeClass by Weak { mHookInfo.videoSubtitles.subtitleType from mClassLoader }
     val videoDetailCallbackClass by Weak { mHookInfo.videoDetailCallback from mClassLoader }
     val biliAccountsClass by Weak { mHookInfo.biliAccounts.class_ from mClassLoader }
     val networkExceptionClass by Weak { "com.bilibili.lib.moss.api.NetworkException" from mClassLoader }
@@ -353,6 +361,78 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                                 && it.type == Int::class.javaPrimitiveType
                     }
                 }.forEach { ids[it.name] = it.get(null) as Int }
+            }
+            appUpgrade = appUpgrade {
+                val upgradeApiMethod = dexHelper.findMethodUsingString(
+                    "https://app.bilibili.com/x/v2/version/fawkes/upgrade",
+                    false,
+                    -1,
+                    -1,
+                    null,
+                    -1,
+                    null,
+                    null,
+                    null,
+                    true
+                ).map { dexHelper.decodeMethodIndex(it) }
+                    .firstOrNull() ?: return@appUpgrade
+                upgradeApi = method { name = upgradeApiMethod.name }
+                updaterOptions = class_ { name = upgradeApiMethod.declaringClass.name }
+                val writeChannelMethod = dexHelper.findMethodUsingString(
+                    "Channel info has already exist.",
+                    false,
+                    -1,
+                    -1,
+                    null,
+                    -1,
+                    null,
+                    null,
+                    null,
+                    true
+                ).map {
+                    dexHelper.decodeMethodIndex(it)
+                }.firstOrNull() ?: return@appUpgrade
+                writeChannel = method { name = writeChannelMethod.name }
+                upgradeUtils = class_ { name = writeChannelMethod.declaringClass.name }
+                dexHelper.findMethodUsingString(
+                    "url_join_us",
+                    false,
+                    -1,
+                    -1,
+                    null,
+                    -1,
+                    null,
+                    null,
+                    null,
+                    true
+                ).map {
+                    dexHelper.decodeMethodIndex(it)
+                }.firstOrNull()?.let {
+                    helpFragment = class_ { name = it.declaringClass.name }
+                }
+            }
+            videoSubtitles = videoSubtitles {
+                val prefix = "com.bapis.bilibili.community.service"
+                var videoSubtitleClass = "$prefix.dm.v1.VideoSubtitle"
+                    .takeIf { it.from(classloader).notNull }
+                var subtitleItemClass = "$prefix.dm.v1.SubtitleItem"
+                    .takeIf { it.from(classloader).notNull }
+                var subtitleTypeClass = "$prefix.dm.v1.SubtitleType"
+                    .takeIf { it.from(classloader).notNull }
+                if (videoSubtitleClass.isNull || subtitleItemClass.isNull || subtitleTypeClass.isNull) {
+                    val regex =
+                        "^com\\.bapis\\.bilibili\\.community\\.service\\.\\w+\\.\\w+\\.(VideoSubtitle|SubtitleItem|SubtitleType)$".toRegex()
+                    val classes = classesList
+                        .filter { it.startsWith(prefix) }
+                        .filter { it.matches(regex) }
+                        .toList()
+                    videoSubtitleClass = classes.find { it.endsWith("VideoSubtitle") }
+                    subtitleItemClass = classes.find { it.endsWith("SubtitleItem") }
+                    subtitleTypeClass = classes.find { it.endsWith("SubtitleType") }
+                }
+                videoSubtitleClass?.let { videoSubtitle = class_ { name = it } }
+                subtitleItemClass?.let { subtitleItem = class_ { name = it } }
+                subtitleTypeClass?.let { subtitleType = class_ { name = it } }
             }
 
             bangumiApiResponse = class_ {
