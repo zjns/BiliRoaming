@@ -174,6 +174,12 @@ message Settings {
   optional Method add_setting = 4;
 }
 
+message AppUpgrade {
+  optional Class updater_options = 1;
+  optional Class append_channel = 2;
+  optional Method upgrade_api = 3;
+}
+
 message VideoSubtitles {
   optional Class video_subtitle = 1;
   optional Class subtitle_item = 2;
@@ -199,7 +205,7 @@ message BiliAccounts {
 
 message HookInfo {
   int64 last_update_time = 1;
-  optional Class append_channel = 500;
+  optional AppUpgrade app_upgrade = 500;
   optional VideoSubtitles video_subtitles = 501;
   optional MapIds map_ids = 2;
   int32 client_version_code = 3;

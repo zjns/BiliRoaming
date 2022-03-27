@@ -160,12 +160,9 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val playerOnSeekCompleteClass by Weak { mHookInfo.playerCoreService.seekCompleteListener from mClassLoader }
     val kanbanCallbackClass by Weak { mHookInfo.kanBan.class_ from mClassLoader }
     val toastHelperClass by Weak { mHookInfo.toastHelper.class_ from mClassLoader }
-    val updaterOptionsClass by Weak { "tv.danmaku.bili.update.api.UpdaterOptions" from mClassLoader }
-    val upgradeApiMethod
-        get() = updaterOptionsClass?.declaredMethods?.firstOrNull {
-            it.parameterTypes.isEmpty() && it.returnType == String::class.java
-        }?.name
-    val appendChannelClass by Weak { mHookInfo.appendChannel from mClassLoader }
+    val updaterOptionsClass by Weak { mHookInfo.appUpgrade.updaterOptions from mClassLoader }
+    val upgradeApiMethod get() = mHookInfo.appUpgrade.upgradeApi.orNull
+    val appendChannelClass by Weak { mHookInfo.appUpgrade.appendChannel from mClassLoader }
     val videoSubtitleClass by Weak { mHookInfo.videoSubtitles.videoSubtitle from mClassLoader }
     val subtitleItemClass by Weak { mHookInfo.videoSubtitles.subtitleItem from mClassLoader }
     val subtitleTypeClass by Weak { mHookInfo.videoSubtitles.subtitleType from mClassLoader }
@@ -395,17 +392,34 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                     }
                 }.forEach { ids[it.name] = it.get(null) as Int }
             }
-            appendChannel = class_ {
-                classesList.filter {
-                    it.startsWith("tv.danmaku.bili.update.internal.network.download.UpdateService2$")
-                }.find { name ->
-                    name.on(classloader).let { clazz ->
-                        clazz.interfaces.contentEquals(arrayOf(Callable::class.java))
-                                && !Modifier.isStatic(clazz.modifiers)
-                                && clazz.declaredFields.size == 2
-                                && clazz.declaredFields.any { it.type == File::class.java }
-                    }
-                }?.let { name = it }
+            appUpgrade = appUpgrade {
+                val upgradeApiMethod = dexHelper.findMethodUsingString(
+                    "https://app.bilibili.com/x/v2/version/fawkes/upgrade",
+                    false,
+                    -1,
+                    0,
+                    null,
+                    -1,
+                    null,
+                    null,
+                    null,
+                    false
+                ).map { dexHelper.decodeMethodIndex(it) }
+                    .firstOrNull() ?: return@appUpgrade
+                upgradeApi = method { name = upgradeApiMethod.name }
+                updaterOptions = class_ { name = upgradeApiMethod.declaringClass.name }
+                appendChannel = class_ {
+                    classesList.filter {
+                        it.startsWith("tv.danmaku.bili.update.internal.network.download.UpdateService2$")
+                    }.find { name ->
+                        name.on(classloader).let { clazz ->
+                            clazz.interfaces.contentEquals(arrayOf(Callable::class.java))
+                                    && !Modifier.isStatic(clazz.modifiers)
+                                    && clazz.declaredFields.size == 2
+                                    && clazz.declaredFields.any { it.type == File::class.java }
+                        }
+                    }?.let { name = it }
+                }
             }
             videoSubtitles = videoSubtitles {
                 val prefix = "com.bapis.bilibili.community.service"
