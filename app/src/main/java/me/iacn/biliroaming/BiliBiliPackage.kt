@@ -41,10 +41,9 @@ private fun GeneratedMessageLite<*, *>.print(indent: Int = 0): String {
         if (f.isStatic) continue
         f.isAccessible = true
         val v = f.get(this)
-        val name = StringBuffer().run {
+        val name = buildString {
             for (i in 0 until indent) append('\t')
             append(f.name.substringBeforeLast("_"), ": ")
-            toString()
         }
         when (v) {
             is GeneratedMessageLite<*, *> -> {
@@ -74,7 +73,7 @@ private fun GeneratedMessageLite<*, *>.print(indent: Int = 0): String {
     return sb.toString()
 }
 
-class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContext: Context) {
+class BiliBiliPackage(private val mClassLoader: ClassLoader, mContext: Context) {
     init {
         instance = this
     }

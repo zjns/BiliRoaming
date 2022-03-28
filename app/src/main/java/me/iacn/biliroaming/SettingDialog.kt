@@ -137,7 +137,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             val supportStoryVideo = instance.storyVideoActivityClass != null
             val supportPurifyShare = instance.shareClickResultClass != null
             val supportDownloadThread = versionCode < 6630000
-            val supportCustomizeTheme = versionCode < 6630000
+            val supportCustomizeTheme = /*versionCode < 6630000*/true
             if (!supportDrawer)
                 disablePreference("drawer")
             if (!supportSplashHook) {
