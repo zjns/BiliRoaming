@@ -1,47 +1,67 @@
 package me.iacn.biliroaming.hook
 
 import android.net.Uri
-import me.iacn.biliroaming.BiliBiliPackage
+import me.iacn.biliroaming.API
+import me.iacn.biliroaming.copy
+import me.iacn.biliroaming.subtitleItem
 import me.iacn.biliroaming.utils.*
+import java.lang.reflect.Method
 
 class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
 
-    private val host = "https://www.kofua.top/bsub/%s"
+    private val convertApi = "https://www.kofua.top/bsub/%s"
 
     override fun startHook() {
         if (!sPrefs.getBoolean("auto_generate_subtitle", false)) return
 
-        BiliBiliPackage.instance.videoSubtitleClass?.hookAfterMethod("getSubtitlesList") ret@{ param ->
-            val subtitles = param.result as? List<*> ?: listOf<Any>()
-            val subtitleItemClass = BiliBiliPackage.instance.subtitleItemClass ?: return@ret
-            val subTypeClass = BiliBiliPackage.instance.subtitleTypeClass ?: return@ret
-            val lanCodes = subtitles.map { it?.callMethodOrNullAs<String>("getLan") }
-            val genCN = "zh-Hant" in lanCodes && "zh-CN" !in lanCodes
-            val genHant = "zh-CN" in lanCodes && "zh-Hant" !in lanCodes
-            val origin = if (genCN) "zh-Hant" else if (genHant) "zh-CN" else ""
-            val target = if (genCN) "zh-CN" else if (genHant) "zh-Hant" else ""
-            val converter = if (genCN) "t2cn" else if (genHant) "cn2t" else ""
-            val targetDoc = if (genCN) "简中（生成）" else if (genHant) "繁中（生成）" else ""
-            if (origin.isNotEmpty()) {
-                val origSub = subtitles.find { it?.callMethod("getLan") == origin } ?: return@ret
-                val origSubUrl = origSub.callMethodOrNullAs<String>("getSubtitleUrl") ?: return@ret
-                var origSubId = origSub.callMethodOrNullAs<Long>("getId") ?: 0L
-                val targetSubUrl = Uri.parse(host.format(converter)).buildUpon()
-                    .appendQueryParameter("sub_url", origSubUrl)
+        "com.bapis.bilibili.community.service.dm.v1.DMMoss".findClassOrNull(mClassLoader)
+            ?.hookAfterMethod(
+                "dmView",
+                "com.bapis.bilibili.community.service.dm.v1.DmViewReq"
+            ) { param ->
+                val dmViewReply = param.result?.let {
+                    API.DmViewReply.parseFrom(
+                        it.callMethodAs<ByteArray>("toByteArray")
+                    )
+                } ?: return@hookAfterMethod
+                val subtitles = dmViewReply.subtitle.subtitlesList
+                if (subtitles.isEmpty()) return@hookAfterMethod
+                val lanCodes = subtitles.map { it.lan }
+                val genCN = "zh-Hant" in lanCodes && "zh-CN" !in lanCodes
+                val genHant = "zh-CN" in lanCodes && "zh-Hant" !in lanCodes
+                val origin = if (genCN) "zh-Hant" else if (genHant) "zh-CN" else ""
+                val target = if (genCN) "zh-CN" else if (genHant) "zh-Hant" else ""
+                val converter = if (genCN) "t2cn" else if (genHant) "cn2t" else ""
+                val targetDoc = if (genCN) "简中（生成）" else if (genHant) "繁中（生成）" else ""
+                val targetDocBrief = if (genCN) "简中" else if (genHant) "繁中" else ""
+                if (origin.isEmpty()) return@hookAfterMethod
+
+                val origSub = subtitles.first { it.lan == origin }
+                var origSubId = origSub.id
+                val targetSubUrl = Uri.parse(convertApi.format(converter))
+                    .buildUpon()
+                    .appendQueryParameter("sub_url", origSub.subtitleUrl)
                     .appendQueryParameter("sub_id", origSubId.toString())
-                    .build().toString()
-                val ccType = subTypeClass.getStaticObjectFieldOrNull("CC") ?: return@ret
-                val item = subtitleItemClass.new().apply {
-                    callMethod("setLan", target)
-                    callMethod("setLanDoc", targetDoc)
-                    callMethod("setSubtitleUrl", targetSubUrl)
-                    callMethod("setType", ccType)
-                    callMethod("setId", ++origSubId)
-                    callMethod("setIdStr", origSubId.toString())
+                    .build()
+                    .toString()
+
+                val newSub = subtitleItem {
+                    lan = target
+                    lanDoc = targetDoc
+                    lanDocBrief = targetDocBrief
+                    subtitleUrl = targetSubUrl
+                    id = ++origSubId
+                    idStr = origSubId.toString()
                 }
-                param.thisObject.callMethod("addSubtitles", subtitles.size, item)
-                param.result = param.thisObject.callMethod("getSubtitlesList")
+
+                val newRes = dmViewReply.copy {
+                    subtitle = subtitle.copy {
+                        this.subtitles.add(newSub)
+                    }
+                }
+
+                param.result = (param.method as Method).returnType
+                    .callStaticMethod("parseFrom", newRes.toByteArray())
             }
-        }
     }
 }
