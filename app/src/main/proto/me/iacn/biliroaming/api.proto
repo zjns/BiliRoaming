@@ -479,6 +479,8 @@ message SubtitleItem {
     string lan_doc = 0x4;
     string subtitle_url = 0x5;
     UserInfo author = 0x6;
+    int32 type = 0x7;
+    string lan_doc_brief = 0x8;
 }
 
 message VideoSubtitle {
