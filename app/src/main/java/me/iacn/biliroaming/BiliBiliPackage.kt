@@ -124,9 +124,6 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val upgradeUtilsClass by Weak { mHookInfo.appUpgrade.upgradeUtils from mClassLoader }
     val writeChannelMethod get() = mHookInfo.appUpgrade.writeChannel.orNull
     val helpFragmentClass by Weak { mHookInfo.appUpgrade.helpFragment from mClassLoader }
-    val videoSubtitleClass by Weak { mHookInfo.videoSubtitles.videoSubtitle from mClassLoader }
-    val subtitleItemClass by Weak { mHookInfo.videoSubtitles.subtitleItem from mClassLoader }
-    val subtitleTypeClass by Weak { mHookInfo.videoSubtitles.subtitleType from mClassLoader }
     val videoDetailCallbackClass by Weak { mHookInfo.videoDetailCallback from mClassLoader }
     val biliAccountsClass by Weak { mHookInfo.biliAccounts.class_ from mClassLoader }
     val networkExceptionClass by Weak { "com.bilibili.lib.moss.api.NetworkException" from mClassLoader }
@@ -410,29 +407,6 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 }.firstOrNull()?.let {
                     helpFragment = class_ { name = it.declaringClass.name }
                 }
-            }
-            videoSubtitles = videoSubtitles {
-                val prefix = "com.bapis.bilibili.community.service"
-                var videoSubtitleClass = "$prefix.dm.v1.VideoSubtitle"
-                    .takeIf { it.from(classloader).notNull }
-                var subtitleItemClass = "$prefix.dm.v1.SubtitleItem"
-                    .takeIf { it.from(classloader).notNull }
-                var subtitleTypeClass = "$prefix.dm.v1.SubtitleType"
-                    .takeIf { it.from(classloader).notNull }
-                if (videoSubtitleClass.isNull || subtitleItemClass.isNull || subtitleTypeClass.isNull) {
-                    val regex =
-                        "^com\\.bapis\\.bilibili\\.community\\.service\\.\\w+\\.\\w+\\.(VideoSubtitle|SubtitleItem|SubtitleType)$".toRegex()
-                    val classes = classesList
-                        .filter { it.startsWith(prefix) }
-                        .filter { it.matches(regex) }
-                        .toList()
-                    videoSubtitleClass = classes.find { it.endsWith("VideoSubtitle") }
-                    subtitleItemClass = classes.find { it.endsWith("SubtitleItem") }
-                    subtitleTypeClass = classes.find { it.endsWith("SubtitleType") }
-                }
-                videoSubtitleClass?.let { videoSubtitle = class_ { name = it } }
-                subtitleItemClass?.let { subtitleItem = class_ { name = it } }
-                subtitleTypeClass?.let { subtitleType = class_ { name = it } }
             }
 
             bangumiApiResponse = class_ {
