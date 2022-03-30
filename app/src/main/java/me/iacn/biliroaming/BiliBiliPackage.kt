@@ -127,6 +127,10 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val videoSubtitleClass by Weak { mHookInfo.videoSubtitles.videoSubtitle from mClassLoader }
     val subtitleItemClass by Weak { mHookInfo.videoSubtitles.subtitleItem from mClassLoader }
     val subtitleTypeClass by Weak { mHookInfo.videoSubtitles.subtitleType from mClassLoader }
+    val userFragmentClass by Weak { mHookInfo.darkSwitch.userFragment from mClassLoader }
+    val themeUtilsClass by Weak { mHookInfo.darkSwitch.themeUtils from mClassLoader }
+    val switchDarkModeMethod get() = mHookInfo.darkSwitch.switchDarkMode.orNull
+    val isDarkFollowSystemMethod get() = mHookInfo.darkSwitch.isDarkFollowSystem.orNull
     val biliAccountsClass by Weak { mHookInfo.biliAccounts.class_ from mClassLoader }
     val networkExceptionClass by Weak { "com.bilibili.lib.moss.api.NetworkException" from mClassLoader }
     val brotliInputStreamClass by Weak { mHookInfo.brotliInputStream from mClassLoader }
@@ -496,6 +500,55 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 }.firstOrNull()?.let {
                     helpFragment = class_ { name = it.declaringClass.name }
                 }
+            }
+            darkSwitch = darkSwitch {
+                val userFragmentClass = dexHelper.findMethodUsingString(
+                    "key_global_link_entrance_shown",
+                    false,
+                    -1,
+                    -1,
+                    null,
+                    -1,
+                    null,
+                    null,
+                    null,
+                    true
+                ).map {
+                    dexHelper.decodeMethodIndex(it)
+                }.firstOrNull()?.declaringClass ?: return@darkSwitch
+                val userFragmentIndex = dexHelper.encodeClassIndex(userFragmentClass)
+                val switchDarkModeIndex = dexHelper.findMethodUsingString(
+                    "default",
+                    false,
+                    -1,
+                    1,
+                    "VZ",
+                    userFragmentIndex,
+                    null,
+                    null,
+                    null,
+                    true
+                ).firstOrNull() ?: return@darkSwitch
+                val switchDarkModeMethod =
+                    dexHelper.decodeMethodIndex(switchDarkModeIndex) ?: return@darkSwitch
+                val contextIndex = dexHelper.encodeClassIndex(Context::class.java)
+                val isDarkFollowSystemMethod = dexHelper.findMethodInvoking(
+                    switchDarkModeIndex,
+                    -1,
+                    1,
+                    "ZL",
+                    -1,
+                    longArrayOf(contextIndex),
+                    null,
+                    null,
+                    true
+                ).map {
+                    dexHelper.decodeMethodIndex(it)
+                }.firstOrNull() ?: return@darkSwitch
+                userFragment = class_ { name = userFragmentClass.name }
+                switchDarkMode = method { name = switchDarkModeMethod.name }
+                themeUtils = class_ { name = isDarkFollowSystemMethod.declaringClass.name }
+                isDarkFollowSystem = method { name = isDarkFollowSystemMethod.name }
             }
 
             bangumiApiResponse = class_ {
