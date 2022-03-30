@@ -186,6 +186,13 @@ message AppUpgrade {
   optional Method write_channel = 5;
 }
 
+message DarkSwitch {
+  optional Class user_fragment = 1;
+  optional Class theme_utils = 2;
+  optional Method switch_dark_mode = 3;
+  optional Method is_dark_follow_system = 4;
+}
+
 message MusicNotification {
   optional Class abs_music_service = 1;
   optional Class background_player = 2;
@@ -206,6 +213,7 @@ message BiliAccounts {
 message HookInfo {
   int64 last_update_time = 1;
   optional AppUpgrade app_upgrade = 500;
+  optional DarkSwitch dark_switch = 501;
   optional MapIds map_ids = 2;
   int32 client_version_code = 3;
   int32 module_version_code = 4;
