@@ -2,8 +2,16 @@ name: Check Bilibili Version
 
 on:
   workflow_dispatch:
-  # schedule:
-  #   - cron: '*/30 1-10 * * 1-5'
+    inputs:
+      only_cache:
+        type: boolean
+        description: Only for cache?
+        required: true
+        default: false
+  schedule:
+    # - cron: '*/30 1-10 * * 1-5'
+    # To make cache always available
+    - cron: '1 23 */5 * *'
   # push:
   #   branches: [me]
 
@@ -15,6 +23,9 @@ jobs:
   check:
     name: Check Version
     runs-on: ubuntu-latest
+
+    env:
+      ONLY_CACHE: ${{ github.event.inputs.only_cache == 'true' }}
 
     outputs:
       new_bili: ${{ steps.check.outputs.new_bili }}
@@ -30,10 +41,20 @@ jobs:
       cycle: ${{ steps.check.outputs.cycle }}
 
     steps:
+      - name: Check event
+        run: |
+          event_name="${{ github.event_name }}"
+          time_hour=`date +%k`
+          if [[ "$event_name" = "schedule" && $time_hour -eq 23 ]]; then
+            echo "ONLY_CACHE=true" >> $GITHUB_ENV
+            echo "Only for cache by schedule event."
+          fi
+
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Setup Python
+        if: env.ONLY_CACHE != 'true'
         uses: actions/setup-python@v2
         with:
           python-version: '3.9.x'
@@ -52,6 +73,7 @@ jobs:
           restore-keys: cache-version-V40
 
       - name: Check version
+        if: env.ONLY_CACHE != 'true'
         id: check
         run: |
           if [ -f "version" ]; then
