@@ -45,6 +45,10 @@
                 android:data="@string/github_url" />
         </Preference>
 
+        <Preference
+            android:key="description"
+            android:summary="@string/pref_description_summary"
+            android:title="@string/pref_description_title" />
 
         <Preference
             android:key="group"
