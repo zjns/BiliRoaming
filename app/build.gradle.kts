@@ -36,7 +36,7 @@ android {
     ndkVersion = "25.2.9519653"
 
     defaultConfig {
-        applicationId = "me.iacn.biliroaming"
+        applicationId = "me.iacn.biliroamingx"
         minSdk = 24
         targetSdk = 33  // Target Android T
         versionCode = appVerCode
@@ -244,7 +244,7 @@ androidComponents.onVariants { variant ->
     updateArtifact.configure {
         this.transformationRequest.set(transformationRequest)
         transformer.set { builtArtifact ->
-            File(projectDir, "${variant.name}/BiliRoaming_${builtArtifact.versionName}.apk")
+            File(projectDir, "${variant.name}/BiliRoamingX_${builtArtifact.versionName}.apk")
         }
     }
 }
