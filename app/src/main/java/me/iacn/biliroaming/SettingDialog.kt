@@ -87,25 +87,32 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             scope.cancel()
         }
 
+        private var mNewestTag = ""
+
         private fun checkUpdate() {
             val url = URL(moduleRes.getString(R.string.version_url))
             scope.launch {
-                val result = fetchJson(url) ?: return@launch
-                val newestVer = result.optString("name")
-                if (newestVer.isNotEmpty() && BuildConfig.VERSION_NAME != newestVer) {
-                    findPreference("version").summary = "${BuildConfig.VERSION_NAME}（最新版$newestVer）"
-                    (findPreference("about") as PreferenceCategory).addPreference(
-                        Preference(
-                            activity
-                        ).apply {
-                            key = "update"
-                            title = moduleRes.getString(R.string.update_title)
-                            summary = result.optString("body").substringAfterLast("更新日志\r\n").run {
-                                ifEmpty { moduleRes.getString(R.string.update_summary) }
-                            }
-                            onPreferenceClickListener = this@PrefsFragment
-                            order = 1
-                        })
+                val json = fetchJsonArray(url) ?: return@launch
+                for (result in json) {
+                    val tagName = result.optString("tag_name").takeIf {
+                        it.startsWith("v")
+                    } ?: continue
+                    val newestVer = result.optString("name")
+                    if (newestVer.isNotEmpty() && BuildConfig.VERSION_NAME != newestVer) {
+                        mNewestTag = tagName
+                        findPreference("version").summary =
+                            "${BuildConfig.VERSION_NAME}（最新版$newestVer）"
+                        (findPreference("about") as PreferenceCategory).addPreference(
+                            Preference(activity).apply {
+                                key = "update"
+                                title = moduleRes.getString(R.string.update_title)
+                                summary = result.optString("body")
+                                    .ifEmpty { moduleRes.getString(R.string.update_summary) }
+                                onPreferenceClickListener = this@PrefsFragment
+                                order = 1
+                            })
+                    }
+                    break
                 }
             }
         }
@@ -315,7 +322,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
         }
 
         private fun onUpdateClick(): Boolean {
-            val uri = Uri.parse(moduleRes.getString(R.string.update_url))
+            val uri = Uri.parse(moduleRes.getString(R.string.update_url, mNewestTag))
             val intent = Intent(Intent.ACTION_VIEW, uri)
             startActivity(intent)
             return true
@@ -471,14 +478,18 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             }
             AlertDialog.Builder(activity)
                 .setTitle(moduleRes.getString(R.string.share_log_title))
-                .setItems(arrayOf("log.txt", "old_log.txt (崩溃相关发这个)")){ _, witch ->
+                .setItems(arrayOf("log.txt", "old_log.txt (崩溃相关发这个)")) { _, witch ->
                     val toShareLog = when (witch) {
                         0 -> logFile
                         else -> oldLogFile
                     }
                     if (toShareLog.exists()) {
-                        toShareLog.copyTo(File(activity.cacheDir, "boxing/log.txt"), overwrite = true)
-                        val uri = Uri.parse("content://${activity.packageName}.fileprovider/internal/log.txt")
+                        toShareLog.copyTo(
+                            File(activity.cacheDir, "boxing/log.txt"),
+                            overwrite = true
+                        )
+                        val uri =
+                            Uri.parse("content://${activity.packageName}.fileprovider/internal/log.txt")
                         activity.startActivity(Intent.createChooser(Intent().apply {
                             action = Intent.ACTION_SEND
                             putExtra(Intent.EXTRA_STREAM, uri)

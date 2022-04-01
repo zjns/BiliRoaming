@@ -160,7 +160,7 @@
         android:title="@string/hidden_group">
 
         <SwitchPreference
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:key="hidden"
             android:summary="@string/hidden_summary"
             android:title="@string/hidden_title" />
@@ -302,6 +302,11 @@
                 android:action="android.intent.action.VIEW"
                 android:data="@string/github_url" />
         </Preference>
+
+        <Preference
+            android:key="description"
+            android:summary="@string/prefs_description_summary"
+            android:title="@string/prefs_description_title" />
 
         <Preference
             android:key="help"
