@@ -340,6 +340,11 @@
         </Preference>
 
         <Preference
+            android:key="description"
+            android:summary="@string/pref_description_summary"
+            android:title="@string/pref_description_title" />
+
+        <Preference
             android:key="help"
             android:summary="@string/help_summary"
             android:title="@string/help_title">
