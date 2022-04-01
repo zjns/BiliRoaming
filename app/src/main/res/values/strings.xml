@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">哔哩漫游</string>
+    <string name="app_name">哔哩漫游X</string>
     <string name="xposed_description">解锁B站港澳台番剧限制</string>
     <string name="about">关于</string>
     <string name="version">版本</string>
@@ -33,17 +33,17 @@
     <string name="setting_category">设置</string>
     <string name="mini_program_title">去你大爷的小程序</string>
     <string name="mini_program_summary">不再以小程序的方式分享到QQ或者微信（同时复制分享链接变为av号）</string>
-    <string name="version_url" translatable="false">https://api.github.com/repos/yujincheng08/BiliRoaming/releases/latest</string>
+    <string name="version_url" translatable="false">https://api.github.com/repos/zjns/BiliRoamingX/releases</string>
     <string name="update_title">更新</string>
     <string name="update_summary">点击打开最新版下载地址</string>
-    <string name="update_url" translatable="false">https://github.com/yujincheng08/BiliRoaming/releases/latest</string>
+    <string name="update_url" translatable="false">https://github.com/zjns/BiliRoamingX/releases/tag/%1$s</string>
     <string name="server_url" translatable="false">https://github.com/yujincheng08/BiliRoaming/wiki/%E5%85%AC%E5%85%B1%E8%A7%A3%E6%9E%90%E6%9C%8D%E5%8A%A1%E5%99%A8</string>
-    <string name="github_url" translatable="false">https://github.com/yujincheng08/BiliRoaming</string>
+    <string name="github_url" translatable="false">https://github.com/zjns/BiliRoamingX</string>
     <string name="group_title">QQ频道</string>
     <string name="group_summary">点击加入QQ频道</string>
     <string name="tg_title">TG频道</string>
     <string name="tg_summary">点击加入TG频道</string>
-    <string name="tg_url" translatable="false">https://t.me/biliroaming</string>
+    <string name="tg_url" translatable="false">https://t.me/bb_show</string>
     <string name="upos_title">UPOS服务器设置</string>
     <string name="upos_summary">设置解锁番剧的服务器，可加快视频加载速度；当所选 UPOS 不能用时，会回退到 MCDN。</string>
     <string name="purify_splash_title">净化开屏页面</string>
@@ -162,8 +162,10 @@
     <string name="force_th_comment_summary">强制开启串台的泰区评论弹幕（仅调试使用）</string>
     <string name="share_log_title">分享日志</string>
     <string name="share_log_summary">可能在旧版无效</string>
-    <string name="auto_generate_subtitle_title">生成字幕</string>
-    <string name="auto_generate_subtitle_summary">为简繁字幕生成相应的繁简字幕\nPowered by 繁化姬</string>
+    <string name="auto_generate_subtitle_title" translatable="false">互转简繁字幕</string>
+    <string name="auto_generate_subtitle_summary" translatable="false">为简繁字幕生成相应的繁简字幕\nPowered by 繁化姬</string>
+    <string name="pref_description_title" translatable="false">说明</string>
+    <string name="pref_description_summary" translatable="false">本模块与原版保持同步更新，并额外添加以下功能：\n1. 隐藏功能里添加简繁字幕互转功能\n2. 我的页面夜间模式切换添加防误触弹框</string>
     <string name="replace_story_video_title">替换竖版视频</string>
     <string name="replace_story_video_summary">替换竖版视频为正常视频</string>
     <string name="customize_drawer_title">自定义我的页面</string>
