@@ -9,7 +9,7 @@ on:
         required: true
         default: false
   schedule:
-    # - cron: '*/30 1-10 * * 1-5'
+    - cron: '1 1-10 * * 1-5'
     # To make cache always available
     - cron: '1 23 */5 * *'
   # push:
@@ -91,6 +91,7 @@ jobs:
             ver="6.60.0"; ver_code="6600300"; sn="7796011"; iv="6600310"
           fi
 
+          pip3 install -U pip
           pip3 install -U urllib3
           py_get_ver_info=$(cat <<EOM
           import json
@@ -121,9 +122,9 @@ jobs:
             'buvid': 'XX61AAD69F83AE28E1FA13EDEFCA9431F1C02',
             'cache-control': 'no-cache',
           }
-          req = http.request('GET', url, params, headers)
-          resp = json.loads(req.data.decode('utf-8'))
           try:
+            req = http.request('GET', url, params, headers)
+            resp = json.loads(req.data.decode('utf-8'))
             if resp['code'] == -304:
               print('no')
             else:
@@ -199,6 +200,11 @@ jobs:
           echo "Changelog: $n_changelog"
           echo "Download url: $n_url"
 
+          if [[ -n "$my_code" && $n_my_code -gt $my_code ]]; then
+            echo "Found new module: $n_my_ver ($n_my_code)"
+            echo "::set-output name=new_my::1"
+          fi
+
           echo "changelog=$n_changelog" > version
           echo "ver=$n_ver" >> version
           echo "ver_code=$n_ver_code" >> version
@@ -260,6 +266,15 @@ jobs:
           key: gradle-builds-${{ github.sha }}
           restore-keys: gradle-builds
 
+      - name: Generate signing config
+        run: |
+          key_base64="${{ secrets.SIGNING_KEY }}"
+          echo -n "$key_base64" | base64 -d > signing.jks
+          echo "releaseStoreFile=signing.jks" >> gradle.properties
+          echo "releaseStorePassword=android" >> gradle.properties
+          echo "releaseKeyAlias=androiddebugkey" >> gradle.properties
+          echo "releaseKeyPassword=android" >> gradle.properties
+
       - name: Build with Gradle
         run: ./gradlew --no-daemon --build-cache -PappVerName=$VERSION assembleRelease
 
@@ -268,7 +283,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: release
-          path: ${{ github.workspace }}/app/release/BiliRoaming_${{ env.VERSION }}.apk
+          path: ${{ github.workspace }}/app/release/BiliRoamingX_${{ env.VERSION }}.apk
           retention-days: 1
 
   patch:
@@ -298,6 +313,7 @@ jobs:
           pip install -U pip
           pip install -U wheel
           pip install -U pyrogram tgcrypto
+          pip install -U urllib3
 
       - name: Download release artifact
         uses: actions/download-artifact@v2
@@ -306,7 +322,7 @@ jobs:
 
       - name: Get xposed module path
         run: |
-          module_apk=`echo BiliRoaming_*.apk`
+          module_apk=`echo BiliRoamingX_*.apk`
           echo "MODULE_APK=$module_apk" >> $GITHUB_ENV
 
       - name: Download bilibili apk
@@ -367,6 +383,45 @@ jobs:
           draft: false
           files: ${{ env.PATCHED_APK }}
 
+      - name: Fetch upstream changelog
+        if: needs.check.outputs.new_my == '1'
+        run: |
+          py_get_up_changelog=$(cat <<EOM
+          import json
+          from urllib3 import PoolManager
+
+          http = PoolManager()
+          url = 'https://api.github.com/repos/yujincheng08/BiliRoaming/releases/tags/v$M_VER_NAME'
+          headers = {
+            'Authorization': 'token ${{ secrets.HUB_TOKEN }}'
+          }
+          changelog = '可直接更新，原版更新日志请看 https://github.com/yujincheng08/BiliRoaming/releases/tag/v$M_VER_NAME'
+          try:
+            req = http.request('GET', url, headers=headers)
+            resp = json.loads(req.data.decode('utf-8'))
+            changelog = resp['body'].split('更新日志\r\n', 1)[1].replace('\r', '')
+            changelog = f'可直接更新，原版更新日志：\n{changelog}'
+            print(changelog)
+          except Exception:
+            print(changelog)
+          EOM
+          )
+          up_changelog="`python -c "$py_get_up_changelog"`"
+          echo -n "$up_changelog" > up_changelog.txt
+
+      - name: Release module apk
+        if: needs.check.outputs.new_my == '1'
+        uses: softprops/action-gh-release@v1
+        with:
+          token: ${{ secrets.HUB_TOKEN }}
+          tag_name: ${{ format('v{0}', env.M_VER_NAME) }}
+          name: ${{ env.M_VER_NAME }}
+          body: ${{ format('可直接更新，原版更新日志请看 https://github.com/yujincheng08/BiliRoaming/releases/tag/v{0}', env.M_VER_NAME) }}
+          body_path: up_changelog.txt
+          prerelease: false
+          draft: false
+          files: ${{ env.MODULE_APK }}
+
       - name: Send to Telegram (New Bilibili)
         shell: python
         if: needs.check.outputs.new_bili == '1'
@@ -407,10 +462,10 @@ jobs:
               文件说明：
               - 以<b>official</b>结尾的为官方原版
               - 以<b>non-module</b>结尾的为<b>无</b>内置模块LSPatch版本
-              - 以<b>with-module</b>结尾的为内置增强版模块LSPatch版本，<b>添加了简繁字幕生成选项</b>
-              - <b>内置版可在应用内收到新的内置修改版更新</b>
+              - 以<b>with-module</b>结尾的为内置增强版模块LSPatch版本，<b>添加了简繁字幕互转功能</b>
+              - <b>内置版</b>可在<b>应用内</b>收到新的内置修改版更新
               """)
-              msg_p4 = f"Bilibili: {ver_name} ({ver_code}) 64位 本版第{cycle}次迭代\nBiliRoaming: {m_ver_name} ({m_ver_code})"
+              msg_p4 = f"Bilibili: {ver_name} ({ver_code}) 64位 本版第{cycle}次迭代\nBiliRoamingX: {m_ver_name} ({m_ver_code})"
               msg_p5 = f"Auto generated by [me]({os.environ['RUN_URL']})."
               caption = "{}\n{}\n\n{}\n\n{}\n{}".format(msg_p1, msg_p2, msg_p3, msg_p4, msg_p5).replace("字幕", "ZM")
               official = InputMediaDocument(media=os.environ["BILIBILI_APK"], caption="")
@@ -472,28 +527,30 @@ jobs:
               m_ver_code = os.environ["M_VER_CODE"]
               channel_id = int(os.environ["CHANNEL_ID"])
               channel_id_me = int(os.environ["CHANNEL_ID_ME"])
-              document = os.environ["PATCHED_APK"]
               msg_p1 = "#Bilibili #BiliRoaming"
               msg_p2 = "发现新版本漫游！"
-              msg_p3 = "内置增强版漫游：<b>添加简繁字幕生成选项</b>\n<b>可在应用内收到新的内置修改版更新</b>"
-              msg_p4 = f"Bilibili: {ver_name} ({ver_code}) 64位\nBiliRoaming: {m_ver_name} ({m_ver_code})"
+              msg_p3 = "内置增强版漫游：<b>添加简繁字幕互转功能</b>\n可在<b>应用内</b>收到新的内置修改版更新"
+              msg_p4 = f"Bilibili: {ver_name} ({ver_code}) 64位\nBiliRoamingX: {m_ver_name} ({m_ver_code})"
               msg_p5 = f"Auto generated by [me]({os.environ['RUN_URL']})."
               caption = "{}\n{}\n\n{}\n\n{}\n{}".format(msg_p1, msg_p2, msg_p3, msg_p4, msg_p5).replace("字幕", "ZM")
-              result = await bot.send_document(
+              module = InputMediaDocument(media=os.environ["MODULE_APK"], caption="")
+              patched = InputMediaDocument(media=os.environ["PATCHED_APK"], caption=caption)
+              result = await bot.send_media_group(
                 chat_id=channel_id_me,
-                document=document,
-                caption=caption,
+                media=[module, patched],
               )
-              file_id = result.document.file_id
-              result = await bot.send_document(
+              file_ids = [m.document.file_id for m in result]
+              module.media = file_ids[0]
+              patched.media = file_ids[1]
+              result = await bot.send_media_group(
                 chat_id=channel_id,
-                document=file_id,
-                caption=caption,
+                media=[module, patched],
               )
+              message_ids = [m.message_id for m in result]
               await bot.forward_messages(
                 chat_id="biliroaming_chat",
                 from_chat_id=channel_id,
-                message_ids=result.message_id,
+                message_ids=message_ids,
               )
           async def wait():
             try:
