@@ -12,7 +12,7 @@ plugins {
     alias(libs.plugins.lsplugin.cmaker)
 }
 
-val appVerCode = jgit.repo()?.commitCount("refs/remotes/origin/master") ?: 0
+val appVerCode = jgit.repo()?.commitCount("refs/remotes/origin/me") ?: 0
 val appVerName: String by rootProject
 
 apksign {
@@ -25,7 +25,7 @@ apksign {
 apktransform {
     copy {
         if (it.buildType == "release") {
-            file("${it.name}/BiliRoaming_${appVerName}.apk")
+            file("${it.name}/BiliRoamingX_${appVerName}.apk")
         } else {
             null
         }
@@ -51,7 +51,7 @@ android {
     ndkVersion = "25.2.9519653"
 
     defaultConfig {
-        applicationId = "me.iacn.biliroaming"
+        applicationId = "me.iacn.biliroamingx"
         minSdk = 24
         targetSdk = 33  // Target Android T
         versionCode = appVerCode
