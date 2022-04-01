@@ -23,6 +23,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import me.iacn.biliroaming.hook.SettingHook
 import me.iacn.biliroaming.utils.fetchJson
+import me.iacn.biliroaming.utils.fetchJsonArray
+import me.iacn.biliroaming.utils.iterator
 import java.io.InputStream
 
 
@@ -51,6 +53,8 @@ class MainActivity : Activity() {
             findPreference("hide_icon").onPreferenceChangeListener = this
             findPreference("version").summary = BuildConfig.VERSION_NAME
             findPreference("feature").onPreferenceClickListener = this
+            val aboutGroup = findPreference("about") as? PreferenceCategory
+            findPreference("group")?.let { aboutGroup?.removePreference(it) }
             findPreference("setting").onPreferenceClickListener = this
             checkUpdate()
         }
@@ -105,24 +109,35 @@ class MainActivity : Activity() {
             }
         }
 
+        private var mNewestTag = ""
+
         private fun checkUpdate() = scope.launch {
-            val result = fetchJson(resources.getString(R.string.version_url)) ?: return@launch
-            val newestVer = result.optString("name")
-            if (newestVer.isNotEmpty() && BuildConfig.VERSION_NAME != newestVer) {
-                findPreference("version").summary = "${BuildConfig.VERSION_NAME}（最新版$newestVer）"
-                (findPreference("about") as PreferenceCategory).addPreference(Preference(activity).apply {
-                    key = "update"
-                    title = resources.getString(R.string.update_title)
-                    summary = result.optString("body").substringAfterLast("更新日志\r\n")
-                        .ifEmpty { resources.getString(R.string.update_summary) }
-                    onPreferenceClickListener = this@PrefsFragment
-                    order = 1
-                })
+            val json = fetchJsonArray(resources.getString(R.string.version_url)) ?: return@launch
+            for (result in json) {
+                val tagName = result.optString("tag_name").takeIf {
+                    it.startsWith("v")
+                } ?: continue
+                val newestVer = result.optString("name")
+                if (newestVer.isNotEmpty() && BuildConfig.VERSION_NAME != newestVer) {
+                    mNewestTag = tagName
+                    findPreference("version").summary =
+                        "${BuildConfig.VERSION_NAME}（最新版$newestVer）"
+                    (findPreference("about") as PreferenceCategory).addPreference(
+                        Preference(activity).apply {
+                            key = "update"
+                            title = resources.getString(R.string.update_title)
+                            summary = result.optString("body")
+                                .ifEmpty { resources.getString(R.string.update_summary) }
+                            onPreferenceClickListener = this@PrefsFragment
+                            order = 1
+                        })
+                }
+                break
             }
         }
 
         private fun onUpdateCheck(): Boolean {
-            val uri = Uri.parse(resources.getString(R.string.update_url))
+            val uri = Uri.parse(resources.getString(R.string.update_url, mNewestTag))
             val intent = Intent(Intent.ACTION_VIEW, uri)
             startActivity(intent)
             return true

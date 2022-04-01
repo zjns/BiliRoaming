@@ -64,6 +64,10 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             }
             findPreference("version")?.summary = BuildConfig.VERSION_NAME
             findPreference("version")?.onPreferenceClickListener = this
+            val aboutGroup = findPreference("about") as? PreferenceCategory
+            findPreference("group")?.let { aboutGroup?.removePreference(it) }
+            val hiddenGroup = findPreference("hidden_group") as? PreferenceCategory
+            findPreference("force_th_comment")?.let { hiddenGroup?.removePreference(it) }
             findPreference("custom_splash")?.onPreferenceChangeListener = this
             findPreference("custom_splash_logo")?.onPreferenceChangeListener = this
             findPreference("save_log")?.summary =
@@ -92,25 +96,32 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             scope.cancel()
         }
 
+        private var mNewestTag = ""
+
         private fun checkUpdate() {
             val url = URL(context.getString(R.string.version_url))
             scope.launch {
-                val result = fetchJson(url) ?: return@launch
-                val newestVer = result.optString("name")
-                if (newestVer.isNotEmpty() && BuildConfig.VERSION_NAME != newestVer) {
-                    findPreference("version").summary = "${BuildConfig.VERSION_NAME}（最新版$newestVer）"
-                    (findPreference("about") as PreferenceCategory).addPreference(
-                        Preference(
-                            activity
-                        ).apply {
-                            key = "update"
-                            title = context.getString(R.string.update_title)
-                            summary = result.optString("body").substringAfterLast("更新日志\r\n").run {
-                                ifEmpty { context.getString(R.string.update_summary) }
-                            }
-                            onPreferenceClickListener = this@PrefsFragment
-                            order = 1
-                        })
+                val json = fetchJsonArray(url) ?: return@launch
+                for (result in json) {
+                    val tagName = result.optString("tag_name").takeIf {
+                        it.startsWith("v")
+                    } ?: continue
+                    val newestVer = result.optString("name")
+                    if (newestVer.isNotEmpty() && BuildConfig.VERSION_NAME != newestVer) {
+                        mNewestTag = tagName
+                        findPreference("version").summary =
+                            "${BuildConfig.VERSION_NAME}（最新版$newestVer）"
+                        (findPreference("about") as PreferenceCategory).addPreference(
+                            Preference(activity).apply {
+                                key = "update"
+                                title = context.getString(R.string.update_title)
+                                summary = result.optString("body")
+                                    .ifEmpty { context.getString(R.string.update_summary) }
+                                onPreferenceClickListener = this@PrefsFragment
+                                order = 1
+                            })
+                    }
+                    break
                 }
             }
         }
@@ -322,7 +333,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
         }
 
         private fun onUpdateClick(): Boolean {
-            val uri = Uri.parse(context.getString(R.string.update_url))
+            val uri = Uri.parse(context.getString(R.string.update_url, mNewestTag))
             val intent = Intent(Intent.ACTION_VIEW, uri)
             startActivity(intent)
             return true
