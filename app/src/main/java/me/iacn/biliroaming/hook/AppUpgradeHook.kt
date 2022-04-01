@@ -11,14 +11,16 @@ class AppUpgradeHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     private val upgradeApi = "https://www.kofua.top/bapp/version/upgrade/m%s"
 
     override fun startHook() {
-        BiliBiliPackage.instance.updaterOptionsClass?.run {
-            BiliBiliPackage.instance.upgradeApiMethod?.let {
-                replaceMethod(it) { upgradeApi.format(BuildConfig.VERSION_CODE) }
+        if (platform == "android") {
+            BiliBiliPackage.instance.updaterOptionsClass?.run {
+                BiliBiliPackage.instance.upgradeApiMethod?.let {
+                    replaceMethod(it) { upgradeApi.format(BuildConfig.VERSION_CODE) }
+                }
             }
-        }
-        BiliBiliPackage.instance.upgradeUtilsClass?.run {
-            BiliBiliPackage.instance.writeChannelMethod?.let {
-                replaceMethod(it, File::class.java, String::class.java) { null }
+            BiliBiliPackage.instance.upgradeUtilsClass?.run {
+                BiliBiliPackage.instance.writeChannelMethod?.let {
+                    replaceMethod(it, File::class.java, String::class.java) { null }
+                }
             }
         }
         BiliBiliPackage.instance.helpFragmentClass?.hookAfterMethod(
