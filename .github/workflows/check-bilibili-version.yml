@@ -441,9 +441,8 @@ jobs:
           async def main():
             session = os.environ["SESSION"]
             bot = Client(
-              session,
-              api_id=os.environ["API_ID"],
-              api_hash=os.environ["API_HASH"],
+              "client",
+              session_string=session,
             )
             async with bot:
               ver_name = os.environ["VER_NAME"]
@@ -483,7 +482,7 @@ jobs:
                 chat_id=channel_id,
                 media=[official, patched_non_module, patched_with_module],
               )
-              message_ids = [m.message_id for m in result]
+              message_ids = [m.id for m in result]
               await bot.forward_messages(
                 chat_id="biliroaming_chat",
                 from_chat_id=channel_id,
@@ -516,9 +515,8 @@ jobs:
           async def main():
             session = os.environ["SESSION"]
             bot = Client(
-              session,
-              api_id=os.environ["API_ID"],
-              api_hash=os.environ["API_HASH"],
+              "client",
+              session_string=session,
             )
             async with bot:
               ver_name = os.environ["VER_NAME"]
@@ -546,7 +544,7 @@ jobs:
                 chat_id=channel_id,
                 media=[module, patched],
               )
-              message_ids = [m.message_id for m in result]
+              message_ids = [m.id for m in result]
               await bot.forward_messages(
                 chat_id="biliroaming_chat",
                 from_chat_id=channel_id,
