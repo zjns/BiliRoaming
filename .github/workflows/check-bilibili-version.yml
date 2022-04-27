@@ -478,15 +478,9 @@ jobs:
               official.media = file_ids[0]
               patched_non_module.media = file_ids[1]
               patched_with_module.media = file_ids[2]
-              result = await bot.send_media_group(
+              await bot.send_media_group(
                 chat_id=channel_id,
                 media=[official, patched_non_module, patched_with_module],
-              )
-              message_ids = [m.id for m in result]
-              await bot.forward_messages(
-                chat_id="biliroaming_chat",
-                from_chat_id=channel_id,
-                message_ids=message_ids,
               )
           async def wait():
             try:
@@ -540,15 +534,9 @@ jobs:
               file_ids = [m.document.file_id for m in result]
               module.media = file_ids[0]
               patched.media = file_ids[1]
-              result = await bot.send_media_group(
+              await bot.send_media_group(
                 chat_id=channel_id,
                 media=[module, patched],
-              )
-              message_ids = [m.id for m in result]
-              await bot.forward_messages(
-                chat_id="biliroaming_chat",
-                from_chat_id=channel_id,
-                message_ids=message_ids,
               )
           async def wait():
             try:
