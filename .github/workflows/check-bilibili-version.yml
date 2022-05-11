@@ -344,7 +344,7 @@ jobs:
           echo "BILIBILI_APK=patched/Bili-v$VER_NAME-b$sn-official.apk" >> $GITHUB_ENV
 
       - name: Download jar patcher
-        run: wget -nv -O lspatch.jar https://github.com/LSPosed/LSPatch/releases/latest/download/lspatch.jar
+        run: wget -nv -O lspatch.jar https://github.com/LSPosed/LSPatch/releases/download/v0.2/lspatch.jar
 
       - name: Apply patch
         run: |
