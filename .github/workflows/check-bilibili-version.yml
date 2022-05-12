@@ -8,6 +8,11 @@ on:
         description: Only for cache?
         required: true
         default: false
+      force:
+        type: boolean
+        description: Force build?
+        required: true
+        default: false
   schedule:
     - cron: '1 1-10 * * 1-5'
     # To make cache always available
@@ -26,6 +31,7 @@ jobs:
 
     env:
       ONLY_CACHE: ${{ github.event.inputs.only_cache == 'true' }}
+      FORCE: ${{ github.event.inputs.force == 'true' }}
 
     outputs:
       new_bili: ${{ steps.check.outputs.new_bili }}
@@ -76,7 +82,7 @@ jobs:
         if: env.ONLY_CACHE != 'true'
         id: check
         run: |
-          if [ -f "version" ]; then
+          if [[ "$FORCE" != "true" && -f "version" ]]; then
             changelog=`awk -F "=" '$1 == "changelog" {print $2}' version`
             ver=`awk -F "=" '$1 == "ver" {print $2}' version`
             ver_code=`awk -F "=" '$1 == "ver_code" {print $2}' version`
