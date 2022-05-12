@@ -2,6 +2,7 @@ package me.iacn.biliroaming.hook
 
 import android.net.Uri
 import me.iacn.biliroaming.API
+import me.iacn.biliroaming.BuildConfig
 import me.iacn.biliroaming.copy
 import me.iacn.biliroaming.subtitleItem
 import me.iacn.biliroaming.utils.*
@@ -42,6 +43,8 @@ class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     .buildUpon()
                     .appendQueryParameter("sub_url", origSub.subtitleUrl)
                     .appendQueryParameter("sub_id", origSubId.toString())
+                    .appendQueryParameter("source", BuildConfig.APPLICATION_ID)
+                    .appendQueryParameter("sv", BuildConfig.VERSION_NAME)
                     .build()
                     .toString()
 
