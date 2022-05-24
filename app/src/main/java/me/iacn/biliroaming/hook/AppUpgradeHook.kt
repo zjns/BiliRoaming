@@ -1,5 +1,7 @@
 package me.iacn.biliroaming.hook
 
+import android.app.AlertDialog
+import android.app.Dialog
 import android.content.pm.PackageManager
 import android.os.Bundle
 import me.iacn.biliroaming.BiliBiliPackage
@@ -38,6 +40,18 @@ class AppUpgradeHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             val mVerCode = BuildConfig.VERSION_CODE
             val summary = "当前版本: $verName (release-b$buildSn)\n当前内置漫游版本: $mVerName ($mVerCode)"
             preference.callMethodOrNull("setSummary", summary)
+        }
+        Dialog::class.java.hookBeforeMethod(
+            "show"
+        ) { param ->
+            val thiz = param.thisObject
+            if (thiz is AlertDialog && thiz.getObjectField("mAlert")
+                    ?.getObjectField("mMessage")
+                    ?.toString() == "新版本安装包下载完成，立即更新?"
+            ) {
+                thiz.callMethod("sendDismissMessage")
+                param.result = null
+            }
         }
     }
 }
