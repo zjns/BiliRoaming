@@ -375,8 +375,9 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                     null,
                     null,
                     true
-                ).map { dexHelper.decodeMethodIndex(it) }
-                    .firstOrNull() ?: return@appUpgrade
+                ).asSequence().firstNotNullOfOrNull {
+                    dexHelper.decodeMethodIndex(it)
+                } ?: return@appUpgrade
                 upgradeApi = method { name = upgradeApiMethod.name }
                 updaterOptions = class_ { name = upgradeApiMethod.declaringClass.name }
                 val writeChannelMethod = dexHelper.findMethodUsingString(
@@ -390,48 +391,44 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                     null,
                     null,
                     true
-                ).map {
+                ).asSequence().firstNotNullOfOrNull {
                     dexHelper.decodeMethodIndex(it)
-                }.firstOrNull() ?: return@appUpgrade
+                } ?: return@appUpgrade
                 writeChannel = method { name = writeChannelMethod.name }
                 upgradeUtils = class_ { name = writeChannelMethod.declaringClass.name }
                 val helpFragmentClass = "com.bilibili.app.preferences.fragment.HelpFragment"
-                    .from(classloader) ?: run {
-                    dexHelper.findMethodUsingString(
-                        "url_join_us",
-                        false,
-                        -1,
-                        -1,
-                        null,
-                        -1,
-                        null,
-                        null,
-                        null,
-                        true
-                    ).map {
-                        dexHelper.decodeMethodIndex(it)
-                    }.firstOrNull()?.declaringClass
-                } ?: return@appUpgrade
+                    .from(classloader) ?: dexHelper.findMethodUsingString(
+                    "url_join_us",
+                    false,
+                    -1,
+                    -1,
+                    null,
+                    -1,
+                    null,
+                    null,
+                    null,
+                    true
+                ).asSequence().firstNotNullOfOrNull {
+                    dexHelper.decodeMethodIndex(it)
+                }?.declaringClass ?: return@appUpgrade
                 helpFragment = class_ { name = helpFragmentClass.name }
             }
             darkSwitch = darkSwitch {
                 val userFragmentClass = "tv.danmaku.bili.ui.main2.mine.HomeUserCenterFragment"
-                    .from(classloader) ?: run {
-                    dexHelper.findMethodUsingString(
-                        "key_global_link_entrance_shown",
-                        false,
-                        -1,
-                        -1,
-                        null,
-                        -1,
-                        null,
-                        null,
-                        null,
-                        true
-                    ).map {
-                        dexHelper.decodeMethodIndex(it)
-                    }.firstOrNull()?.declaringClass
-                } ?: return@darkSwitch
+                    .from(classloader) ?: dexHelper.findMethodUsingString(
+                    "key_global_link_entrance_shown",
+                    false,
+                    -1,
+                    -1,
+                    null,
+                    -1,
+                    null,
+                    null,
+                    null,
+                    true
+                ).asSequence().firstNotNullOfOrNull {
+                    dexHelper.decodeMethodIndex(it)
+                }?.declaringClass ?: return@darkSwitch
                 val userFragmentIndex = dexHelper.encodeClassIndex(userFragmentClass)
                 val switchDarkModeIndex = dexHelper.findMethodUsingString(
                     "default",
@@ -466,9 +463,9 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                         null,
                         null,
                         true
-                    ).map {
+                    ).asSequence().firstNotNullOfOrNull {
                         dexHelper.decodeMethodIndex(it)
-                    }.firstOrNull() as? Method
+                    } as? Method
                     themeUtilsClass = isDarkFollowSystemMethod?.declaringClass
                 }
                 userFragment = class_ { name = userFragmentClass.name }
