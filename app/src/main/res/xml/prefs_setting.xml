@@ -130,6 +130,11 @@
             android:title="@string/custom_link_title" />
 
         <SwitchPreference
+            android:key="auto_generate_subtitle"
+            android:summary="@string/generate_subtitle_summary"
+            android:title="@string/generate_subtitle_title" />
+
+        <SwitchPreference
             android:defaultValue="true"
             android:key="fix_space"
             android:summary="@string/fix_space_summary"
@@ -287,11 +292,6 @@
             android:title="@string/customize_space_title" />
         <SwitchPreference
             android:dependency="hidden"
-            android:key="auto_generate_subtitle"
-            android:summary="@string/auto_generate_subtitle_summary"
-            android:title="@string/auto_generate_subtitle_title" />
-        <SwitchPreference
-            android:dependency="hidden"
             android:key="block_upper_recommend_ad"
             android:summary="@string/block_video_ad_summary"
             android:title="@string/block_video_ad_title" />
@@ -369,6 +369,14 @@
             <intent
                 android:action="android.intent.action.VIEW"
                 android:data="@string/tg_url" />
+        </Preference>
+
+        <Preference
+            android:key="subtitle_feedback"
+            android:title="@string/subtitle_feedback_title">
+            <intent
+                android:action="android.intent.action.VIEW"
+                android:data="@string/subtitle_dict_repo_url" />
         </Preference>
 
     </PreferenceCategory>
