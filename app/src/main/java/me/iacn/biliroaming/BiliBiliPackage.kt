@@ -96,6 +96,12 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     }
     val pegasusFeedClass by Weak { mHookInfo.pegasusFeed.class_ from mClassLoader }
     val okhttpResponseClass by Weak { mHookInfo.okhttpResponse from mClassLoader }
+    val requestClass by Weak { mHookInfo.okHttp.classRequest from mClassLoader }
+    val responseBuilderClass by Weak { mHookInfo.okHttp.responseBuilder from mClassLoader }
+    val responseBodyClass by Weak { mHookInfo.okHttp.responseBody from mClassLoader }
+    val mediaTypeClass by Weak { mHookInfo.okHttp.mediaType from mClassLoader }
+    val realCallClass by Weak { mHookInfo.okHttp.realCall from mClassLoader }
+    val protocolClass by Weak { mHookInfo.okHttp.protocol from mClassLoader }
     val subtitleSpanClass by Weak { mHookInfo.subtitleSpan from mClassLoader }
     val chronosSwitchClass by Weak { mHookInfo.chronosSwitch from mClassLoader }
     val biliSpaceClass by Weak { "com.bilibili.app.authorspace.api.BiliSpace" from mClassLoader }
@@ -119,8 +125,6 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val playerOnSeekCompleteClass by Weak { mHookInfo.playerCoreService.seekCompleteListener from mClassLoader }
     val kanbanCallbackClass by Weak { mHookInfo.kanBan.class_ from mClassLoader }
     val toastHelperClass by Weak { mHookInfo.toastHelper.class_ from mClassLoader }
-    val updaterOptionsClass by Weak { mHookInfo.appUpgrade.updaterOptions from mClassLoader }
-    val upgradeApiMethod get() = mHookInfo.appUpgrade.upgradeApi.orNull
     val upgradeUtilsClass by Weak { mHookInfo.appUpgrade.upgradeUtils from mClassLoader }
     val writeChannelMethod get() = mHookInfo.appUpgrade.writeChannel.orNull
     val helpFragmentClass by Weak { mHookInfo.appUpgrade.helpFragment from mClassLoader }
@@ -162,6 +166,12 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     }
 
     fun fastJsonParse() = mHookInfo.fastJson.parse.orNull
+
+    fun createResponseBody() = mHookInfo.okHttp.create.orNull
+    fun getMediaType() = mHookInfo.okHttp.get.orNull
+    fun executeCall() = mHookInfo.okHttp.execute.orNull
+    fun realCallRequestField() = mHookInfo.okHttp.realCallRequest.orNull
+    fun responseBuildFields() = mHookInfo.okHttp.responseBuildFieldsList.map { it.orNull }
 
     fun colorArray() = mHookInfo.themeHelper.colorArray.orNull
 
@@ -364,22 +374,6 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 }.forEach { ids[it.name] = it.get(null) as Int }
             }
             appUpgrade = appUpgrade {
-                val upgradeApiMethod = dexHelper.findMethodUsingString(
-                    "https://app.bilibili.com/x/v2/version/fawkes/upgrade",
-                    false,
-                    -1,
-                    -1,
-                    null,
-                    -1,
-                    null,
-                    null,
-                    null,
-                    true
-                ).asSequence().firstNotNullOfOrNull {
-                    dexHelper.decodeMethodIndex(it)
-                } ?: return@appUpgrade
-                upgradeApi = method { name = upgradeApiMethod.name }
-                updaterOptions = class_ { name = upgradeApiMethod.declaringClass.name }
                 val writeChannelMethod = dexHelper.findMethodUsingString(
                     "Channel info has already exist.",
                     false,
@@ -482,24 +476,99 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 name = "com.bilibili.bangumi.data.common.api.BangumiApiResponse"
             }
             retrofitResponse = class_ {
-                name = dexHelper.findMethodUsingString(
-                    "rawResponse must be successful response",
-                    false,
-                    -1,
-                    -1,
-                    null,
-                    -1,
-                    null,
-                    null,
-                    null,
-                    true
-                ).asSequence().firstNotNullOfOrNull {
-                    dexHelper.decodeMethodIndex(it)
-                }?.declaringClass?.name ?: return@class_
+                name = "retrofit2.Response".from(classloader)?.name
+                    ?: dexHelper.findMethodUsingString(
+                        "rawResponse must be successful response",
+                        false,
+                        -1,
+                        -1,
+                        null,
+                        -1,
+                        null,
+                        null,
+                        null,
+                        true
+                    ).asSequence().firstNotNullOfOrNull {
+                        dexHelper.decodeMethodIndex(it)
+                    }?.declaringClass?.name ?: return@class_
             }
             okHttp = okHttp {
-                val responseClass = dexHelper.findMethodUsingString(
-                    "Response{protocol=",
+                val responseClass = "okhttp3.Response".from(classloader)
+                    ?: dexHelper.findMethodUsingString(
+                        "Response{protocol=",
+                        false,
+                        -1,
+                        -1,
+                        null,
+                        -1,
+                        null,
+                        null,
+                        null,
+                        true
+                    ).asSequence().firstNotNullOfOrNull {
+                        dexHelper.decodeMethodIndex(it)
+                    }?.declaringClass ?: return@okHttp
+                val requestClass = "okhttp3.Request".from(classloader)
+                    ?: dexHelper.findMethodUsingString(
+                        "Request{method=",
+                        false,
+                        -1,
+                        -1,
+                        null,
+                        -1,
+                        null,
+                        null,
+                        null,
+                        true
+                    ).asSequence().firstNotNullOfOrNull {
+                        dexHelper.decodeMethodIndex(it)
+                    }?.declaringClass ?: return@okHttp
+                val urlClass = "okhttp3.HttpUrl".from(classloader)
+                    ?: dexHelper.findMethodUsingString(
+                        ":@",
+                        false,
+                        -1,
+                        -1,
+                        null,
+                        -1,
+                        null,
+                        null,
+                        null,
+                        true
+                    ).asSequence().firstNotNullOfOrNull {
+                        dexHelper.decodeMethodIndex(it)
+                    }?.declaringClass ?: return@okHttp
+                val responseBodyClass = "okhttp3.ResponseBody".from(classloader)
+                    ?: dexHelper.findMethodUsingString(
+                        "Cannot buffer entire body for content length: ",
+                        false,
+                        -1,
+                        -1,
+                        null,
+                        -1,
+                        null,
+                        null,
+                        null,
+                        true
+                    ).asSequence().firstNotNullOfOrNull {
+                        dexHelper.decodeMethodIndex(it)
+                    }?.declaringClass ?: return@okHttp
+                val getMethod = dexHelper.findMethodUsingString(
+                    "No subtype found for:",
+                    true,
+                    -1,
+                    -1,
+                    null,
+                    -1,
+                    null,
+                    null,
+                    null,
+                    true
+                ).asSequence().firstNotNullOfOrNull {
+                    dexHelper.decodeMethodIndex(it)
+                } ?: return@okHttp
+                val realCallClass = dexHelper.findMethodUsingString(
+                    "web socket",
                     false,
                     -1,
                     -1,
@@ -512,42 +581,74 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 ).asSequence().firstNotNullOfOrNull {
                     dexHelper.decodeMethodIndex(it)
                 }?.declaringClass ?: return@okHttp
-                val requestClass = dexHelper.findMethodUsingString(
-                    "Request{method=",
+                val executeMethod = dexHelper.findMethodUsingString(
+                    "Already Executed",
                     false,
                     -1,
-                    -1,
+                    0,
                     null,
-                    -1,
+                    dexHelper.encodeClassIndex(realCallClass),
                     null,
                     null,
                     null,
                     true
                 ).asSequence().firstNotNullOfOrNull {
                     dexHelper.decodeMethodIndex(it)
-                }?.declaringClass ?: return@okHttp
-                val urlClass = dexHelper.findMethodUsingString(
-                    ":@",
-                    false,
-                    -1,
-                    -1,
-                    null,
-                    -1,
-                    null,
-                    null,
-                    null,
-                    true
-                ).asSequence().firstNotNullOfOrNull {
-                    dexHelper.decodeMethodIndex(it)
-                }?.declaringClass ?: return@okHttp
+                } ?: return@okHttp
+                val protocolClass = "okhttp3.Protocol".from(classloader)
+                    ?: dexHelper.findMethodUsingString(
+                        "Unexpected protocol: ",
+                        false,
+                        -1,
+                        -1,
+                        null,
+                        -1,
+                        null,
+                        null,
+                        null,
+                        false
+                    ).asSequence().map {
+                        dexHelper.decodeMethodIndex(it)?.declaringClass
+                    }.find { it?.isEnum == true } ?: return@okHttp
                 request = field {
                     name = responseClass.findFirstFieldByExactTypeOrNull(requestClass)?.name
                         ?: return@field
                 }
                 url = field {
-                    name =
-                        requestClass.findFirstFieldByExactTypeOrNull(urlClass)?.name ?: return@field
+                    name = requestClass.findFirstFieldByExactTypeOrNull(urlClass)?.name
+                        ?: return@field
                 }
+                classRequest = class_ { name = requestClass.name }
+                val responseBuilderClass = responseClass.declaredConstructors.firstOrNull()
+                    ?.parameterTypes?.firstOrNull() ?: return@okHttp
+                responseBuilder = class_ { name = responseBuilderClass.name }
+                buildList {
+                    val findField = { type: Class<*>? ->
+                        responseBuilderClass.findFirstFieldByExactTypeOrNull(type)?.name
+                    }
+                    findField(requestClass)?.also { add(it) } ?: return@buildList
+                    findField(protocolClass)?.also { add(it) } ?: return@buildList
+                    findField(Int::class.javaPrimitiveType)?.also { add(it) } ?: return@buildList
+                    findField(String::class.java)?.also { add(it) } ?: return@buildList
+                    findField(responseBodyClass)?.also { add(it) } ?: return@buildList
+                }.takeIf { it.size == 5 }?.map { field { name = it } }?.also {
+                    responseBuildFields += it
+                } ?: return@okHttp
+                responseBody = class_ { name = responseBodyClass.name }
+                create = method {
+                    name = responseBodyClass.methods.find {
+                        it.isStatic && it.parameterTypes.count() == 2 && it.parameterTypes[1] == String::class.java
+                    }?.name ?: return@okHttp
+                }
+                mediaType = class_ { name = getMethod.declaringClass.name }
+                get = method { name = getMethod.name }
+                realCall = class_ { name = realCallClass.name }
+                execute = method { name = executeMethod.name }
+                realCallRequest = field {
+                    name = realCallClass.findFirstFieldByExactTypeOrNull(requestClass)?.name
+                        ?: return@okHttp
+                }
+                protocol = class_ { name = protocolClass.name }
             }
             fastJson = fastJson {
                 val fastJsonClass = dexHelper.findMethodUsingString(
@@ -1321,20 +1422,21 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 name = "com.bilibili.okretro.GeneralResponse"
             }
             okhttpResponse = class_ {
-                name = dexHelper.findMethodUsingString(
-                    "Cannot buffer entire body for content length",
-                    true,
-                    -1,
-                    0,
-                    null,
-                    -1,
-                    null,
-                    null,
-                    null,
-                    true
-                ).asSequence().firstNotNullOfOrNull {
-                    dexHelper.decodeMethodIndex(it)
-                }?.declaringClass?.name ?: return@class_
+                name = "okhttp3.ResponseBody".from(classloader)?.name
+                    ?: dexHelper.findMethodUsingString(
+                        "Cannot buffer entire body for content length",
+                        true,
+                        -1,
+                        0,
+                        null,
+                        -1,
+                        null,
+                        null,
+                        null,
+                        true
+                    ).asSequence().firstNotNullOfOrNull {
+                        dexHelper.decodeMethodIndex(it)
+                    }?.declaringClass?.name ?: return@class_
             }
             pegasusFeed = pegasusFeed {
                 val fastJSONObject =
