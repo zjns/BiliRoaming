@@ -162,6 +162,7 @@ android {
             "-Xno-call-assertions",
             "-Xno-receiver-assertions",
             "-opt-in=kotlin.RequiresOptIn",
+            "-Xcontext-receivers"
         )
     }
 
