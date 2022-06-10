@@ -70,8 +70,8 @@ class ProtoBufDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             val indent = param.args[1] as Int
             val name = param.args[2] as String
             val obj = param.args[3]
-            val printField = fun(sb: StringBuilder, indent: Int, name: String, obj: Any?) {
-                (param.method as Method).invoke(null, sb, indent, name, obj)
+            val printField = fun(sb: StringBuilder, indent: Int, name: String, obj: Any?): Any? {
+                return (param.method as Method).invoke(null, sb, indent, name, obj)
             }
             if (obj is List<*>) {
                 obj.forEach { printField(sb, indent, name, it) }
