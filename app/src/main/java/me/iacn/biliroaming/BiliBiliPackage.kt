@@ -38,6 +38,8 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
         instance = this
     }
 
+    lateinit var globalDexHelper: DexHelper
+
     @OptIn(ExperimentalTime::class)
     private val mHookInfo: Configs.HookInfo = run {
         val (result, time) = measureTimedValue { readHookInfo(mContext) }
@@ -287,8 +289,18 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                         && BuildConfig.VERSION_CODE == info.moduleVersionCode
                         && BuildConfig.VERSION_NAME == info.moduleVersionName
                         && info.biliAccounts.getAccessKey.orNull != null
-                    )
+                    ) {
+                        if (BuildConfig.DEBUG) {
+                            try {
+                                System.loadLibrary("biliroaming")
+                                context.classLoader.findDexClassLoader(::findRealClassloader)?.let {
+                                    globalDexHelper = DexHelper(it)
+                                }
+                            } catch (_: Throwable) {
+                            }
+                        }
                         return info
+                    }
                 }
             }
             Log.d("Read hook info completed: take $t ms")
@@ -348,6 +360,7 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
 
             val dexHelper =
                 DexHelper(classloader.findDexClassLoader(::findRealClassloader) ?: return@hookInfo)
+            if (BuildConfig.DEBUG) instance.globalDexHelper = dexHelper
             lastUpdateTime = max(
                 context.packageManager.getPackageInfo(
                     AndroidAppHelper.currentPackageName(),
@@ -1802,7 +1815,7 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 }?.name ?: return@method
             }
 
-            dexHelper.close()
+            if (!BuildConfig.DEBUG) dexHelper.close()
         }
 
         @Volatile
