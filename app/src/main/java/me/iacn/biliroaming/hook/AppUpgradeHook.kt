@@ -31,10 +31,7 @@ class AppUpgradeHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     private val upgradeCheckApi = "https://api.github.com/repos/zjns/BiliRoamingX/releases"
 
     private val noUpdateResponse: String
-        get() = json {
-            "code" by -304
-            "message" by "木有改动"
-        }.toString()
+        get() = mapOf("code" to -304, "message" to "木有改动").toJson()
 
     override fun startHook() {
         instance.helpFragmentClass?.hookAfterMethod(
@@ -115,27 +112,26 @@ class AppUpgradeHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     "${info.changelog}\n\nAPP版本：${info.versionCode} b${info.sn}\n内置漫游版本：${info.moduleVersion}"
                 val triggeredBy = if (newMy) "本次更新由漫游更新触发" else "本次更新由APP更新触发"
                 newChangelog = newChangelog + "\n\n" + triggeredBy
-                return json {
-                    "code" by 0
-                    "message" by "0"
-                    "ttl" by 1
-                    //"data" by { // not working now
-                    "data" by json {
-                        "title" by "新版漫游内置包"
-                        "content" by newChangelog
-                        "version" by info.version
-                        "version_code" by if (newMy) info.versionCode + 1 else info.versionCode
-                        "url" by "https://ghproxy.com/${info.url}"
-                        "size" by info.size
-                        "md5" by info.md5
-                        "silent" by 0
-                        "upgrade_type" by 1
-                        "cycle" by 1
-                        "policy" by 0
-                        "policy_url" by ""
-                        "ptime" by info.buildTime
-                    }
-                }.toString()
+                return mapOf(
+                    "code" to 0,
+                    "message" to "0",
+                    "ttl" to 1,
+                    "data" to mapOf(
+                        "title" to "新版漫游内置包",
+                        "content" to newChangelog,
+                        "version" to info.version,
+                        "version_code" to if (newMy) info.versionCode + 1 else info.versionCode,
+                        "url" to "https://ghproxy.com/${info.url}",
+                        "size" to info.size,
+                        "md5" to info.md5,
+                        "silent" to 0,
+                        "upgrade_type" to 1,
+                        "cycle" to 1,
+                        "policy" to 0,
+                        "policy_url" to "",
+                        "ptime" to info.buildTime,
+                    )
+                ).toJson()
             }
             break
         }
