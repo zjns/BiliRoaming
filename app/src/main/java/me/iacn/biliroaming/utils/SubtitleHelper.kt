@@ -201,4 +201,22 @@ object SubtitleHelper {
             }
         } else apply { put(info) }
     }
+
+    private const val furrySubInfo = "「字幕由 富睿字幕組 搬運」\n（禁止在B站宣傳漫遊相關内容，否則拉黑）"
+
+    private fun JSONArray.removeFurrySubInfo() = apply {
+        (5 downTo 0).forEach { idx ->
+            optJSONObject(idx)?.let {
+                val content = it.optString("content")
+                if (content == furrySubInfo) {
+                    remove(idx)
+                } else if (content.contains(furrySubInfo)) {
+                    it.put(
+                        "content",
+                        content.replace("\n$furrySubInfo", "").replace("$furrySubInfo\n", "")
+                    )
+                }
+            }
+        }
+    }
 }
