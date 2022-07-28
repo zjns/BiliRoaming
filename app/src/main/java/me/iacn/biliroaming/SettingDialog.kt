@@ -7,6 +7,8 @@ import android.app.Activity
 import android.app.Activity.RESULT_CANCELED
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -616,6 +618,11 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                     val s = if (platform != null) "$accessKey;$platform" else accessKey
                     it.setText(s)
                     it.hint = ""
+                }
+                view.findViewById<Button>(R.id.copy_key).setOnClickListener {
+                    ClipData.newPlainText("", instance.accessKey ?: "").let {
+                        activity.getSystemService(ClipboardManager::class.java).setPrimaryClip(it)
+                    }
                 }
                 setTitle(R.string.customize_accessKey_title)
                 setView(view)
