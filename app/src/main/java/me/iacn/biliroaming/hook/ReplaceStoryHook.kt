@@ -18,21 +18,17 @@ class ReplaceStoryHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             val thiz = param.thisObject as Activity
             val intent = thiz.intent
             val url = intent.data
-            if (url != null && url.scheme == "bilibili" && url.host?.startsWith("story") == true && url.path?.matches(
+            if (url != null && url.scheme == "bilibili" && url.host == "story" && url.path?.matches(
                     Regex("/\\d+")
                 ) == true
             ) {
                 intent.data = Uri.parse("bilibili://video/${url.path?.substring(1)}")
-            } else {
-                Log.toast("解析失败，无法替换竖版视频")
-                Log.e("parse $url as story failed")
-                return@hookBeforeMethod
+                intent.component = null
+                intent.setPackage(thiz.packageName)
+                thiz.startActivity(intent)
+                Log.toast("已替换竖版视频")
+                thiz.finish()
             }
-            intent.component = null
-            intent.setPackage(thiz.packageName)
-            thiz.startActivity(intent)
-            Log.toast("已替换竖版视频")
-            thiz.finish()
         }
     }
 }
