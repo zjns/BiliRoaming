@@ -186,11 +186,15 @@ class BangumiPlayUrlHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         )
                         Log.toast("请求解析服务器发生错误: ${e.message}", alsoLog = true)
                     }
-                } else if (isDownload) {
-                    param.result = fixDownloadProto(response)
-                } else if (blockBangumiPageAds) {
-                    param.result = purifyViewInfo(response)
+                } else {
+                    lastSeasonInfo["epid"] = request.callMethod("getEpId")?.toString()
+                    if (isDownload) {
+                        param.result = fixDownloadProto(response)
+                    } else if (blockBangumiPageAds) {
+                        param.result = purifyViewInfo(response)
+                    }
                 }
+                VideoSubtitleHook.onEpPlay()
             }
         }
         "com.bapis.bilibili.pgc.gateway.player.v2.PlayURLMoss".findClassOrNull(mClassLoader)?.run {
@@ -261,11 +265,15 @@ class BangumiPlayUrlHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         )
                         Log.toast("请求解析服务器发生错误: ${e.message}", alsoLog = true)
                     }
-                } else if (isDownload) {
-                    param.result = fixDownloadProto(response)
-                } else if (blockBangumiPageAds) {
-                    param.result = purifyViewInfo(response)
+                } else {
+                    lastSeasonInfo["epid"] = request.callMethod("getEpId")?.toString()
+                    if (isDownload) {
+                        param.result = fixDownloadProto(response)
+                    } else if (blockBangumiPageAds) {
+                        param.result = purifyViewInfo(response)
+                    }
                 }
+                VideoSubtitleHook.onEpPlay()
             }
         }
         instance.playerMossClass?.run {
@@ -337,10 +345,14 @@ class BangumiPlayUrlHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         )
                         Log.toast("请求解析服务器发生错误: ${e.message}", alsoLog = true)
                     }
-                } else if (isDownload) {
-                    param.result = fixDownloadProtoUnite(response)
-                } else if (blockBangumiPageAds) {
-                    param.result = purifyViewInfo(response, supplement)
+                } else {
+                    lastSeasonInfo["epid"] = request.callMethod("getVod")
+                        ?.callMethodAs<Map<String, String>>("getExtraContentMap")?.get("ep_id")
+                    if (isDownload) {
+                        param.result = fixDownloadProtoUnite(response)
+                    } else if (blockBangumiPageAds) {
+                        param.result = purifyViewInfo(response, supplement)
+                    }
                 }
             }
         }
