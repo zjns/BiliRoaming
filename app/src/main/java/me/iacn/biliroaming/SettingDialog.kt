@@ -671,9 +671,13 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                     it.setText(s)
                     it.hint = ""
                 }
-                view.findViewById<Button>(R.id.copy_key).setOnClickListener {
-                    ClipData.newPlainText("", instance.accessKey ?: "").let {
-                        activity.getSystemService(ClipboardManager::class.java).setPrimaryClip(it)
+                view.findViewById<Button>(R.id.copy_key).run {
+                    visibility = View.VISIBLE
+                    setOnClickListener {
+                        ClipData.newPlainText("", instance.accessKey ?: "").let {
+                            activity.getSystemService(ClipboardManager::class.java)
+                                .setPrimaryClip(it)
+                        }
                     }
                 }
                 setTitle(R.string.customize_accessKey_title)
