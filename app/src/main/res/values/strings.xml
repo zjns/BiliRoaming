@@ -171,7 +171,7 @@
     <string name="subtitle_convert_failed" translatable="false">字幕转换失败，请重试</string>
     <string name="subtitle_dict_download_failed" translatable="false">转换字典下载失败，请重试</string>
     <string name="pref_description_title" translatable="false">说明</string>
-    <string name="pref_description_summary" translatable="false">本模块与原版保持同步更新，并额外添加以下功能：\n1. 杂项里添加繁体字幕简化功能\n2. 我的页面夜间模式切换添加防误触弹框</string>
+    <string name="pref_description_summary" translatable="false">本模块与原版保持同步更新，并额外添加以下功能：\n1. 杂项里添加繁体字幕简化功能\n2. 我的页面夜间模式切换添加防误触弹框\n3. 添加番剧字幕下载功能</string>
     <string name="replace_story_video_title">替换竖版视频</string>
     <string name="replace_story_video_summary">替换竖版视频为正常视频</string>
     <string name="customize_drawer_title">自定义我的页面</string>
