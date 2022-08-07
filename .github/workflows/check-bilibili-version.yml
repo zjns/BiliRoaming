@@ -253,7 +253,7 @@ jobs:
       - name: Retrieve version
         run: |
           version=`awk -F "=" '$1 == "appVerName" {print $2}' gradle.properties`
-          if [[ "${{ steps.check.outputs.new_bili }}" = "1" && "${{ steps.check.outputs.new_my }}" != "1" ]]; then
+          if [[ "${{ needs.check.outputs.new_bili }}" = "1" && "${{ needs.check.outputs.new_my }}" != "1" ]]; then
             time=`TZ=UTC-8 date +%y%m%d%H`
             version="${version}_T${time}"
           fi
