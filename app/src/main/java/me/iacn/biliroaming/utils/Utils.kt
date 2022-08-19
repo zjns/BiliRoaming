@@ -2,11 +2,13 @@ package me.iacn.biliroaming.utils
 
 import android.annotation.SuppressLint
 import android.app.AndroidAppHelper
+import android.app.AppOpsManager
 import android.content.Context
 import android.content.pm.PackageManager.GET_META_DATA
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
+import android.provider.Settings
 import android.util.TypedValue
 import android.view.*
 import androidx.annotation.RequiresApi
@@ -283,6 +285,31 @@ val ViewGroup.children: Sequence<View>
 fun View.addBackgroundRipple() = with(TypedValue()) {
     context.theme.resolveAttribute(android.R.attr.selectableItemBackground, this, true)
     setBackgroundResource(resourceId)
+}
+
+fun windowAlertPermissionGranted(): Boolean {
+    val context = currentContext
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+        return Settings.canDrawOverlays(context)
+    } else {
+        val appOpsManager = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        val opCheckResult = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val uid = android.os.Process.myUid()
+            appOpsManager.unsafeCheckOpNoThrow(
+                AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW,
+                uid,
+                context.packageName
+            )
+        } else {
+            val uid = android.os.Process.myUid()
+            appOpsManager.checkOpNoThrow(
+                AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW,
+                uid,
+                context.packageName
+            )
+        }
+        return opCheckResult == AppOpsManager.MODE_ALLOWED
+    }
 }
 
 @SuppressLint("ApplySharedPref")
