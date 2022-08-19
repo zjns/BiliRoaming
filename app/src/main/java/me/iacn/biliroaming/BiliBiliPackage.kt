@@ -132,6 +132,8 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val themeUtilsClass by Weak { mHookInfo.darkSwitch.themeUtils from mClassLoader }
     val switchDarkModeMethod get() = mHookInfo.darkSwitch.switchDarkMode.orNull
     val isDarkFollowSystemMethod get() = mHookInfo.darkSwitch.isDarkFollowSystem.orNull
+    val toolbarServiceClass by Weak { mHookInfo.toolbarService.class_ from mClassLoader }
+    val miniPlayMethod get() = mHookInfo.toolbarService.miniPlay.orNull
     val biliAccountsClass by Weak { mHookInfo.biliAccounts.class_ from mClassLoader }
     val networkExceptionClass by Weak { "com.bilibili.lib.moss.api.NetworkException" from mClassLoader }
     val brotliInputStreamClass by Weak { mHookInfo.brotliInputStream from mClassLoader }
@@ -528,6 +530,30 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 isDarkFollowSystemMethod?.let {
                     isDarkFollowSystem = method { name = it.name }
                 }
+            }
+            toolbarService = toolbarService {
+                val bangumiActivityClass =
+                    "com.bilibili.bangumi.ui.page.detail.BangumiDetailActivityV3".from(classloader)
+                        ?: return@toolbarService
+                val onStopMethod = bangumiActivityClass.getDeclaredMethod("onStop")
+                val onStopMethodIndex = dexHelper.encodeMethodIndex(onStopMethod)
+                val contextClassIndex = dexHelper.encodeClassIndex(Context::class.java)
+                val miniPlayMethod = dexHelper.findMethodInvoking(
+                    onStopMethodIndex,
+                    -1,
+                    1,
+                    "VL",
+                    -1,
+                    longArrayOf(contextClassIndex),
+                    null,
+                    null,
+                    true
+                ).asSequence().firstNotNullOfOrNull {
+                    dexHelper.decodeMethodIndex(it)
+                } ?: return@toolbarService
+                val toolbarServiceClass = miniPlayMethod.declaringClass
+                class_ = class_ { name = toolbarServiceClass.name }
+                miniPlay = method { name = miniPlayMethod.name }
             }
 
             bangumiApiResponse = class_ {
