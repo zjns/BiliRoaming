@@ -219,10 +219,16 @@ message BiliAccounts {
   optional Method get_access_key = 3;
 }
 
+message ToolbarService {
+  optional Class class = 1;
+  optional Method mini_play = 2;
+}
+
 message HookInfo {
   int64 last_update_time = 1;
   optional AppUpgrade app_upgrade = 500;
   optional DarkSwitch dark_switch = 501;
+  optional ToolbarService toolbar_service = 502;
   optional MapIds map_ids = 2;
   int32 client_version_code = 3;
   int32 module_version_code = 4;
