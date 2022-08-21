@@ -150,7 +150,9 @@ object SubtitleHelper {
         (5 downTo 0).forEach { idx ->
             optJSONObject(idx)?.let {
                 val content = it.optString("content")
-                if (content == furrySubInfoT || content == furrySubInfoS || content == furrySubInfoS2 || content == mineSubInfo) {
+                if (content == furrySubInfoT || content == furrySubInfoS || content == furrySubInfoS2
+                    || content.contains(mineSubInfo)
+                ) {
                     remove(idx)
                 } else if (content.contains(furrySubInfoT)
                     || content.contains(furrySubInfoS)
@@ -204,7 +206,7 @@ object SubtitleHelper {
         val lastIdx = length() - 1
         optJSONObject(lastIdx)?.let {
             val content = it.optString("content")
-            if (content == mineSubInfo) {
+            if (content.contains(mineSubInfo)) {
                 remove(lastIdx)
             }
         }
