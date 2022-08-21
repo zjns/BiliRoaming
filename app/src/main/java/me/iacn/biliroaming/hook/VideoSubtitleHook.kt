@@ -46,6 +46,7 @@ class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             && sPrefs.getBoolean("enable_download_subtitle", false)
         ) enableSubtitleDownloadHook()
         if (!sPrefs.getBoolean("auto_generate_subtitle", false)) return
+        val debug = sPrefs.getBoolean("generate_subtitle_debug", false)
 
         "com.bapis.bilibili.community.service.dm.v1.DMMoss".from(mClassLoader)
             ?.hookAfterMethodWithPriority(
@@ -73,7 +74,7 @@ class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 }
 
                 val origSub = subtitles.first { it.lan == origin }
-                var origSubId = origSub.id
+                val origSubId = origSub.id
                 val api = if (!useLocalDict) convertApi.format(converter) else fakeConvertApi
                 val targetSubUrl = Uri.parse(api).buildUpon()
                     .appendQueryParameter("sub_url", origSub.subtitleUrl)
@@ -85,13 +86,27 @@ class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     lanDoc = targetDoc
                     lanDocBrief = targetDocBrief
                     subtitleUrl = targetSubUrl
-                    id = ++origSubId
-                    idStr = origSubId.toString()
+                    id = origSubId + 1
+                    idStr = id.toString()
                 }
+
+                val debugSub = if (debug) subtitleItem {
+                    val url = Uri.parse(convertApi.format(converter)).buildUpon()
+                        .appendQueryParameter("sub_url", origSub.subtitleUrl)
+                        .appendQueryParameter("sub_id", origSubId.toString())
+                        .build().toString()
+                    lan = "debugCN"
+                    lanDoc = "简中（调试）"
+                    lanDocBrief = "简中"
+                    subtitleUrl = url
+                    id = origSubId + 2
+                    idStr = id.toString()
+                } else null
 
                 val newRes = dmViewReply.copy {
                     subtitle = subtitle.copy {
                         this.subtitles.add(newSub)
+                        debugSub?.let { this.subtitles.add(it) }
                     }
                 }
                 currentSubtitles = newRes.subtitle.subtitlesList

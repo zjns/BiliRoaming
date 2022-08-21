@@ -164,6 +164,8 @@
     <string name="share_log_summary">可能在旧版无效</string>
     <string name="generate_subtitle_title" translatable="false">生成简中字幕</string>
     <string name="generate_subtitle_summary" translatable="false">根据繁体字幕自动生成简中字幕</string>
+    <string name="generate_subtitle_debug_title" translatable="false">生成简中字幕（调试用）</string>
+    <string name="generate_subtitle_debug_summary" translatable="false">调用三方服务根据繁体字幕自动生成简中字幕（调试用）</string>
     <string name="subtitle_feedback_title" translatable="false">字幕转换错误反馈</string>
     <string name="subtitle_dict_repo_url" translatable="false">https://github.com/BBSub/ZhConvertDict</string>
     <string name="subtitle_dict_latest_url" translatable="false">https://api.github.com/repos/BBSub/ZhConvertDict/releases/latest</string>

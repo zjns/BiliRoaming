@@ -149,6 +149,12 @@
             android:title="@string/generate_subtitle_title" />
 
         <SwitchPreference
+            android:dependency="auto_generate_subtitle"
+            android:key="generate_subtitle_debug"
+            android:summary="@string/generate_subtitle_debug_summary"
+            android:title="@string/generate_subtitle_debug_title" />
+
+        <SwitchPreference
             android:dependency="main_func"
             android:key="enable_download_subtitle"
             android:summary="@string/enable_download_subtitle_summary"
