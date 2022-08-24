@@ -274,6 +274,7 @@ val restartBiliBili = task("restartBiliBili").doLast {
         commandLine(adbExecutable, "shell", "am", "force-stop", "tv.danmaku.bili")
     }
     exec {
+        Thread.sleep(2000)
         commandLine(
             adbExecutable,
             "shell",
