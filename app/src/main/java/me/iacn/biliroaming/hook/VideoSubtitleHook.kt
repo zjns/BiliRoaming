@@ -30,6 +30,7 @@ import me.iacn.biliroaming.utils.SubtitleHelper.removeSubAppendedInfo
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 import java.lang.reflect.Method
+import java.lang.reflect.Proxy
 import java.net.URL
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
@@ -42,12 +43,14 @@ class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     private val useLocalDict = true
 
     override fun startHook() {
-        if (sPrefs.getBoolean("main_func", false)
-            && sPrefs.getBoolean("enable_download_subtitle", false)
-        ) enableSubtitleDownloadHook()
-        if (!sPrefs.getBoolean("auto_generate_subtitle", false)) return
+        val enableSubDownload = sPrefs.getBoolean("main_func", false)
+                && sPrefs.getBoolean("enable_download_subtitle", false)
+        if (enableSubDownload)
+            enableSubtitleDownloadHook()
+        val genSub = sPrefs.getBoolean("auto_generate_subtitle", false)
         val debug = sPrefs.getBoolean("generate_subtitle_debug", false)
 
+        if (!enableSubDownload && !genSub) return
         "com.bapis.bilibili.community.service.dm.v1.DMMoss".from(mClassLoader)
             ?.hookAfterMethodWithPriority(
                 "dmView",
@@ -68,7 +71,7 @@ class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 val target = if (genCN) "zh-CN" else ""
                 val targetDoc = if (genCN) "简中（生成）" else ""
                 val targetDocBrief = if (genCN) "简中" else ""
-                if (!genCN) {
+                if (!genSub || !genCN) {
                     currentSubtitles = subtitles
                     return@hookAfterMethodWithPriority
                 }
@@ -115,7 +118,7 @@ class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     .callStaticMethod("parseFrom", newRes.toByteArray())
             }
 
-        if (!useLocalDict) return
+        if (!genSub || !useLocalDict) return
         instance.realCallClass?.hookBeforeMethod(instance.executeCall()) { param ->
             val request = param.thisObject.getObjectField(instance.realCallRequestField())
                 ?: return@hookBeforeMethod
@@ -250,7 +253,10 @@ class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     }
                 }
             }
-            hookAfterMethod("onDestroy") { preventFinish = false }
+            hookAfterMethod("onDestroy") {
+                currentSubtitles = listOf()
+                preventFinish = false
+            }
         }
         instance.toolbarServiceClass?.hookBeforeMethod(
             instance.miniPlayMethod, Context::class.java
@@ -259,6 +265,51 @@ class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 preventFinish = false
                 param.result = null
             }
+        }
+
+        val superMenuClass =
+            "com.bilibili.app.comm.supermenu.SuperMenu".from(mClassLoader) ?: return
+        val menuItemClickListenerClass =
+            "com.bilibili.app.comm.supermenu.core.listeners.OnMenuItemClickListenerV2"
+                .from(mClassLoader) ?: return
+        val menuItemClickListenerField =
+            superMenuClass.findFieldByExactType(menuItemClickListenerClass) ?: return
+        val menuItemImplClass = "com.bilibili.app.comm.supermenu.core.MenuItemImpl"
+            .from(mClassLoader) ?: return
+        superMenuClass.hookBeforeMethod("show") { param ->
+            if (currentSubtitles.isEmpty())
+                return@hookBeforeMethod
+            val thiz = param.thisObject
+            val activityRef =
+                thiz.getFirstFieldByExactTypeAs<WeakReference<Activity>>(WeakReference::class.java)
+            val activity = activityRef?.get() ?: return@hookBeforeMethod
+            if (activity.isFinishing || activity.isDestroyed) return@hookBeforeMethod
+            val menu = thiz.callMethodAs<List<*>>("getMenus").last() ?: return@hookBeforeMethod
+            val menuItems = menu.getFirstFieldByExactTypeAs<MutableList<Any>>(List::class.java)
+                ?.also { l ->
+                    l.find { it.callMethodAs<String?>("getItemId") == settingsItemId }
+                        ?: return@hookBeforeMethod
+                } ?: return@hookBeforeMethod
+            val subDownloadItem = menuItemImplClass.new(
+                currentContext,
+                subDownloadItemId,
+                downloadIconResId,
+                "字幕下载"
+            )
+            menuItems.add(0, subDownloadItem)
+            val menuItemClickListener = menuItemClickListenerField.get(thiz)
+            val proxyClickListener = Proxy.newProxyInstance(
+                menuItemClickListener.javaClass.classLoader,
+                arrayOf(menuItemClickListenerClass),
+            ) { _, m, args ->
+                if (m.name == "onItemClick" && args[0].callMethod("getItemId") == subDownloadItemId) {
+                    showFormatChoiceDialog(activity, false)
+                    true
+                } else {
+                    m.invoke(menuItemClickListener, *args)
+                }
+            }
+            menuItemClickListenerField.set(thiz, proxyClickListener)
         }
     }
 
@@ -270,6 +321,9 @@ class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         private const val reqCodeJson = 6666
         private const val reqCodeSrt = 8888
         private var preventFinish = false
+        private const val settingsItemId = "menu_settings"
+        private const val subDownloadItemId = "menu_download_subtitles"
+        private val downloadIconResId by lazy { getResId("bangumi_sheet_ic_downloads", "drawable") }
 
         private val Int.dp
             inline get() = TypedValue.applyDimension(
@@ -290,7 +344,6 @@ class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             }
         }
 
-        @SuppressLint("InlinedApi")
         private fun subDownloadButtonHook(activity: Activity) {
             val anchor = activity.findViewById<TextView>(anchorId)
             val anchorButton = anchor?.parent as View? ?: return
@@ -311,40 +364,44 @@ class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.MATCH_PARENT
                 )
-                setOnClickListener {
-                    AlertDialog.Builder(activity)
-                        .setTitle("格式选择")
-                        .setItems(arrayOf("json", "srt")) { _, which ->
-                            if (windowAlertPermissionGranted())
-                                preventFinish = true
-                            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
-                                putExtra(
-                                    DocumentsContract.EXTRA_INITIAL_URI,
-                                    Uri.parse("content://com.android.externalstorage.documents/document/primary:Download")
-                                )
-                            }
-                            activity.startActivityForResult(
-                                intent,
-                                if (which == 0) reqCodeJson else reqCodeSrt
-                            )
-                        }
-                        .create().apply {
-                            setOnShowListener {
-                                window?.let { w ->
-                                    @Suppress("DEPRECATION")
-                                    val screenWidth = w.windowManager.defaultDisplay.width
-                                    w.attributes = w.attributes.also {
-                                        it.width = (screenWidth * 0.3).toInt()
-                                    }
-                                }
-                            }
-                        }
-                        .show()
-                    activity.findViewById<ViewGroup>(playControlId)?.getChildAt(0)
-                        ?.visibility = View.GONE
-                }
+                setOnClickListener { showFormatChoiceDialog(activity, true) }
             }
             buttonsView.addView(subDownloadButton, anchorIdx - 1)
+        }
+
+        @SuppressLint("InlinedApi")
+        private fun showFormatChoiceDialog(activity: Activity, landscape: Boolean) {
+            AlertDialog.Builder(activity)
+                .setTitle("格式选择")
+                .setItems(arrayOf("json", "srt")) { _, which ->
+                    if (windowAlertPermissionGranted())
+                        preventFinish = true
+                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+                        putExtra(
+                            DocumentsContract.EXTRA_INITIAL_URI,
+                            Uri.parse("content://com.android.externalstorage.documents/document/primary:Download")
+                        )
+                    }
+                    activity.startActivityForResult(
+                        intent,
+                        if (which == 0) reqCodeJson else reqCodeSrt
+                    )
+                }
+                .create().apply {
+                    setOnShowListener {
+                        window?.let { w ->
+                            @Suppress("DEPRECATION")
+                            val screenWidth = w.windowManager.defaultDisplay.width
+                            w.attributes = w.attributes.also {
+                                it.width = (screenWidth * if (landscape) 0.3 else 0.5).toInt()
+                            }
+                        }
+                    }
+                }
+                .show()
+            if (landscape)
+                activity.findViewById<ViewGroup>(playControlId)?.getChildAt(0)
+                    ?.visibility = View.GONE
         }
     }
 }
