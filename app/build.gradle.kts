@@ -119,7 +119,7 @@ android {
             proguardFiles("proguard-rules.pro")
             externalNativeBuild {
                 cmake {
-                    val flags =arrayOf(
+                    val flags = arrayOf(
                         "-flto",
                         "-ffunction-sections",
                         "-fdata-sections",
@@ -275,6 +275,7 @@ val restartBiliBili = task("restartBiliBili").doLast {
         commandLine(adbExecutable, "shell", "am", "force-stop", "tv.danmaku.bili")
     }
     exec {
+        Thread.sleep(2000)
         commandLine(
             adbExecutable, "shell", "am", "start",
             "$(pm resolve-activity --components tv.danmaku.bili)"
