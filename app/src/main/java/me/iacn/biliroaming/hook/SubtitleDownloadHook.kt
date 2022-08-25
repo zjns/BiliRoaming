@@ -33,8 +33,96 @@ import java.net.URL
 import kotlin.math.roundToInt
 
 class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
+
+    private var currentVideoTitle: String? = null
+
     override fun startHook() {
         if (!enable) return
+
+        "com.bapis.bilibili.app.view.v1.ViewMoss".hookAfterMethod(
+            mClassLoader,
+            "view",
+            "com.bapis.bilibili.app.view.v1.ViewReq"
+        ) { param ->
+            val result = param.result ?: return@hookAfterMethod
+            currentVideoTitle = result.callMethod("getArc")
+                ?.callMethodAs("getTitle")
+            currentSubtitles = listOf()
+        }
+
+        val onActivityResultHook = fun(param: MethodHookParam, video: Boolean) {
+            val thiz = param.thisObject as Activity
+            val requestCode = param.args[0] as Int
+            val resultCode = param.args[1] as Int
+            val data = (param.args[2] as Intent?)?.data
+            if (data == null || resultCode != Activity.RESULT_OK) return
+            val titleDir = if (video) currentVideoTitle ?: return
+            else BangumiSeasonHook.lastSeasonInfo["title"] ?: return
+            val epId = BangumiSeasonHook.lastSeasonInfo["epid"]
+            val epTitleDir = BangumiSeasonHook.lastSeasonInfo["ep_title_$epId"]
+            if (!video && epTitleDir == null) return
+            val exportJson = requestCode == reqCodeJson
+            val ext = if (exportJson) "json" else "srt"
+            val mimeType = if (exportJson) "application/json"
+            else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                "application/x-subrip"
+            else
+                "application/octet-stream"
+            SubtitleHelper.executor.execute {
+                val titleDirDoc = DocumentFile.fromTreeUri(thiz, data)
+                    ?.findOrCreateDir(titleDir) ?: return@execute
+                currentSubtitles.forEach { item ->
+                    val lan = item.lan
+                    val lanDoc = item.lanDoc
+                    val url = item.subtitleUrl
+                    val fileName = if (video) "$titleDir-$lan-$lanDoc.$ext"
+                    else "$titleDir-$epTitleDir-$lan-$lanDoc.$ext"
+                    val subFileDoc = titleDirDoc
+                        .run { if (!video) findOrCreateDir(epTitleDir ?: "") else this }
+                        ?.findOrCreateFile(mimeType, fileName)
+                        ?: return@forEach
+                    thiz.contentResolver.openOutputStream(subFileDoc.uri, "wt")?.use { os ->
+                        runCatching {
+                            val json = JSONObject(URL(url).readText())
+                            val body = json.getJSONArray("body")
+                                .removeSubAppendedInfo().reSort()
+                            json.put("body", body)
+                            if (exportJson) {
+                                val prettyJson = json.toString(2)
+                                os.write(prettyJson.toByteArray())
+                            } else {
+                                os.write(body.convertToSrt().toByteArray())
+                            }
+                            Log.toast("字幕 $fileName 下载完成", force = true)
+                        }.onFailure {
+                            Log.toast("字幕 $fileName 下载失败", force = true)
+                        }
+                    }
+                }
+            }
+        }
+
+        "com.bilibili.multitypeplayerV2.MultiTypeVideoContentActivity".from(mClassLoader)?.run {
+            hookAfterMethod(
+                "onActivityResult",
+                Int::class.javaPrimitiveType, Int::class.javaPrimitiveType, Intent::class.java
+            ) { onActivityResultHook(it, true) }
+            hookAfterMethod("onDestroy") {
+                currentSubtitles = listOf()
+                preventFinish = false
+            }
+        }
+
+        "com.bilibili.video.videodetail.VideoDetailsActivity".from(mClassLoader)?.run {
+            hookAfterMethod(
+                "onActivityResult",
+                Int::class.javaPrimitiveType, Int::class.javaPrimitiveType, Intent::class.java
+            ) { onActivityResultHook(it, true) }
+            hookAfterMethod("onDestroy") {
+                currentSubtitles = listOf()
+                preventFinish = false
+            }
+        }
 
         "com.bilibili.bangumi.ui.page.detail.BangumiDetailActivityV3".from(mClassLoader)?.run {
             hookAfterMethod("onConfigurationChanged", Configuration::class.java) { param ->
@@ -48,55 +136,7 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             hookAfterMethod(
                 "onActivityResult",
                 Int::class.javaPrimitiveType, Int::class.javaPrimitiveType, Intent::class.java
-            ) { param ->
-                val thiz = param.thisObject as Activity
-                val requestCode = param.args[0] as Int
-                val resultCode = param.args[1] as Int
-                val data = (param.args[2] as Intent?)?.data
-                if (data == null || resultCode != Activity.RESULT_OK) return@hookAfterMethod
-                val titleDir = BangumiSeasonHook.lastSeasonInfo["title"] ?: return@hookAfterMethod
-                val epId = BangumiSeasonHook.lastSeasonInfo["epid"]
-                val epTitleDir = BangumiSeasonHook.lastSeasonInfo["ep_title_$epId"]
-                    ?: return@hookAfterMethod
-                val exportJson = requestCode == reqCodeJson
-                val ext = if (exportJson) "json" else "srt"
-                val mimeType = if (exportJson) "application/json"
-                else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-                    "application/x-subrip"
-                else
-                    "application/octet-stream"
-                SubtitleHelper.executor.execute {
-                    val titleDirDoc = DocumentFile.fromTreeUri(thiz, data)
-                        ?.findOrCreateDir(titleDir) ?: return@execute
-                    currentSubtitles.forEach { item ->
-                        val lan = item.lan
-                        val lanDoc = item.lanDoc
-                        val url = item.subtitleUrl
-                        val fileName = "$titleDir-$epTitleDir-$lan-$lanDoc.$ext"
-                        val subFileDoc = titleDirDoc
-                            .findOrCreateDir(epTitleDir)
-                            ?.findOrCreateFile(mimeType, fileName)
-                            ?: return@forEach
-                        thiz.contentResolver.openOutputStream(subFileDoc.uri, "wt")?.use { os ->
-                            runCatching {
-                                val json = JSONObject(URL(url).readText())
-                                val body = json.getJSONArray("body")
-                                    .removeSubAppendedInfo().reSort()
-                                json.put("body", body)
-                                if (exportJson) {
-                                    val prettyJson = json.toString(2)
-                                    os.write(prettyJson.toByteArray())
-                                } else {
-                                    os.write(body.convertToSrt().toByteArray())
-                                }
-                                Log.toast("字幕 $fileName 下载完成", force = true)
-                            }.onFailure {
-                                Log.toast("字幕 $fileName 下载失败", force = true)
-                            }
-                        }
-                    }
-                }
-            }
+            ) { onActivityResultHook(it, false) }
             hookAfterMethod("onDestroy") {
                 currentSubtitles = listOf()
                 preventFinish = false
@@ -131,8 +171,10 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             val menu = thiz.callMethodAs<List<*>>("getMenus").last() ?: return@hookBeforeMethod
             val menuItems = menu.getFirstFieldByExactTypeAs<MutableList<Any>>(List::class.java)
                 ?.also { l ->
-                    l.find { it.callMethodAs<String?>("getItemId") == settingsItemId }
-                        ?: return@hookBeforeMethod
+                    l.find {
+                        it.callMethodAs<String?>("getItemId")
+                            .let { id -> id == settingsItemId || id == settingsItemId2 }
+                    } ?: return@hookBeforeMethod
                 } ?: return@hookBeforeMethod
             val subDownloadItem = menuItemImplClass.new(
                 currentContext,
@@ -170,7 +212,8 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         private const val reqCodeJson = 6666
         private const val reqCodeSrt = 8888
         private var preventFinish = false
-        private const val settingsItemId = "menu_settings"
+        private const val settingsItemId = "menu_settings" // pgc/bangumi
+        private const val settingsItemId2 = "PLAY_SETTING" // ugc/video
         private const val subDownloadItemId = "menu_download_subtitles"
         private val downloadIconResId by lazy { getResId("bangumi_sheet_ic_downloads", "drawable") }
 
@@ -213,7 +256,7 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 )
                 setOnClickListener { showFormatChoiceDialog(activity, true) }
             }
-            buttonsView.addView(subDownloadButton, anchorIdx - 1)
+            buttonsView.addView(subDownloadButton, anchorIdx)
         }
 
         @SuppressLint("InlinedApi")
