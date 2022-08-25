@@ -34,7 +34,6 @@ class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     )
                 } ?: return@hookAfterMethodWithPriority
                 val subtitles = dmViewReply.subtitle.subtitlesList
-                if (subtitles.isEmpty()) return@hookAfterMethodWithPriority
                 val lanCodes = subtitles.map { it.lan }
                 val genCN = "zh-Hant" in lanCodes && "zh-CN" !in lanCodes
                 val origin = if (genCN) "zh-Hant" else ""
