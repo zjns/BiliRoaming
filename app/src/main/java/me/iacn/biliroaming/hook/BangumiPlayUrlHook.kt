@@ -201,7 +201,6 @@ class BangumiPlayUrlHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         param.result = fixDownloadProto(response)
                     }
                 }
-                SubtitleDownloadHook.onEpPlay()
             }
         }
         "com.bapis.bilibili.pgc.gateway.player.v2.PlayURLMoss".findClassOrNull(mClassLoader)?.run {
@@ -271,7 +270,6 @@ class BangumiPlayUrlHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         param.result = fixDownloadProto(response)
                     }
                 }
-                SubtitleDownloadHook.onEpPlay()
             }
         }
 
