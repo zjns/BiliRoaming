@@ -5,21 +5,10 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
-import android.graphics.Color
-import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
 import android.provider.DocumentsContract
-import android.util.TypedValue
-import android.view.Gravity
-import android.view.View
-import android.view.ViewGroup
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.documentfile.provider.DocumentFile
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.launch
 import me.iacn.biliroaming.BiliBiliPackage
 import me.iacn.biliroaming.hook.VideoSubtitleHook.Companion.currentSubtitles
 import me.iacn.biliroaming.utils.*
@@ -30,7 +19,6 @@ import org.json.JSONObject
 import java.lang.ref.WeakReference
 import java.lang.reflect.Proxy
 import java.net.URL
-import kotlin.math.roundToInt
 
 class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
 
@@ -39,15 +27,19 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     override fun startHook() {
         if (!enable) return
 
-        "com.bapis.bilibili.app.view.v1.ViewMoss".hookAfterMethod(
-            mClassLoader,
-            "view",
-            "com.bapis.bilibili.app.view.v1.ViewReq"
-        ) { param ->
-            val result = param.result ?: return@hookAfterMethod
-            currentVideoTitle = result.callMethod("getArc")
-                ?.callMethodAs("getTitle")
-            currentSubtitles = listOf()
+        "com.bapis.bilibili.app.view.v1.ViewMoss".from(mClassLoader)?.run {
+            hookBeforeMethod(
+                "view",
+                "com.bapis.bilibili.app.view.v1.ViewReq"
+            ) { currentSubtitles = listOf() }
+            hookAfterMethod(
+                "view",
+                "com.bapis.bilibili.app.view.v1.ViewReq"
+            ) { param ->
+                val result = param.result ?: return@hookAfterMethod
+                currentVideoTitle = result.callMethod("getArc")
+                    ?.callMethodAs("getTitle")
+            }
         }
 
         val onActivityResultHook = fun(param: MethodHookParam, video: Boolean) {
@@ -125,14 +117,6 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         }
 
         "com.bilibili.bangumi.ui.page.detail.BangumiDetailActivityV3".from(mClassLoader)?.run {
-            hookAfterMethod("onConfigurationChanged", Configuration::class.java) { param ->
-                val thiz = param.thisObject as Activity
-                activityRef = WeakReference(thiz)
-                val newConfig = param.args[0] as Configuration
-                if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                    subDownloadButtonHook(thiz)
-                }
-            }
             hookAfterMethod(
                 "onActivityResult",
                 Int::class.javaPrimitiveType, Int::class.javaPrimitiveType, Intent::class.java
@@ -142,6 +126,7 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 preventFinish = false
             }
         }
+
         BiliBiliPackage.instance.toolbarServiceClass?.hookBeforeMethod(
             BiliBiliPackage.instance.miniPlayMethod, Context::class.java
         ) { param ->
@@ -189,7 +174,7 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 arrayOf(menuItemClickListenerClass),
             ) { _, m, args ->
                 if (m.name == "onItemClick" && args[0].callMethod("getItemId") == subDownloadItemId) {
-                    showFormatChoiceDialog(activity, false)
+                    showFormatChoiceDialog(activity)
                     true
                 } else {
                     m.invoke(menuItemClickListener, *args)
@@ -205,10 +190,6 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     && sPrefs.getBoolean("enable_download_subtitle", false)
         }
 
-        private var activityRef = WeakReference<Activity>(null)
-        private val anchorId by lazy { getId("control_container_subtitle_text") }
-        private val playControlId by lazy { getId("control_container") }
-        private val subDownloadButtonId = View.generateViewId()
         private const val reqCodeJson = 6666
         private const val reqCodeSrt = 8888
         private var preventFinish = false
@@ -217,51 +198,10 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         private const val subDownloadItemId = "menu_download_subtitles"
         private val downloadIconResId by lazy { getResId("bangumi_sheet_ic_downloads", "drawable") }
 
-        private val Int.dp
-            inline get() = TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_DIP,
-                toFloat(),
-                currentContext.resources.displayMetrics
-            ).roundToInt()
-
-        fun onEpPlay() {
-            if (enable) {
-                MainScope().launch {
-                    activityRef.get()?.let {
-                        subDownloadButtonHook(it)
-                    }
-                }
-            }
-        }
-
-        private fun subDownloadButtonHook(activity: Activity) {
-            val anchor = activity.findViewById<TextView>(anchorId)
-            val anchorButton = anchor?.parent as View? ?: return
-            val buttonsView = anchorButton.parent as LinearLayout? ?: return
-            if (anchorButton.visibility != View.VISIBLE
-                || buttonsView.findViewById<TextView>(subDownloadButtonId) != null
-            ) return
-            val anchorIdx = buttonsView.indexOfChild(anchorButton)
-            val subDownloadButton = TextView(activity).apply {
-                text = "字幕下载"
-                id = subDownloadButtonId
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14F)
-                setTextColor(Color.WHITE)
-                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-                gravity = Gravity.CENTER
-                setPadding(11.dp, 0, 11.dp, 0)
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.MATCH_PARENT
-                )
-                setOnClickListener { showFormatChoiceDialog(activity, true) }
-            }
-            buttonsView.addView(subDownloadButton, anchorIdx)
-        }
-
         @SuppressLint("InlinedApi")
-        private fun showFormatChoiceDialog(activity: Activity, landscape: Boolean) {
-            AlertDialog.Builder(activity)
+        private fun showFormatChoiceDialog(activity: Activity) {
+            val appDialogTheme = getResId("AppTheme.Dialog.Alert", "style")
+            AlertDialog.Builder(activity, appDialogTheme)
                 .setTitle("格式选择")
                 .setItems(arrayOf("json", "srt")) { _, which ->
                     if (windowAlertPermissionGranted())
@@ -283,15 +223,12 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                             @Suppress("DEPRECATION")
                             val screenWidth = w.windowManager.defaultDisplay.width
                             w.attributes = w.attributes.also {
-                                it.width = (screenWidth * if (landscape) 0.3 else 0.5).toInt()
+                                it.width = (screenWidth * 0.5).toInt()
                             }
                         }
                     }
                 }
                 .show()
-            if (landscape)
-                activity.findViewById<ViewGroup>(playControlId)?.getChildAt(0)
-                    ?.visibility = View.GONE
         }
     }
 }
