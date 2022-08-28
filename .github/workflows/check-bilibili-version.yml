@@ -93,6 +93,7 @@ jobs:
             iv=`awk -F "=" '$1 == "iv" {print $2}' version`
             cycle=`awk -F "=" '$1 == "cycle" {print $2}' version`
             my_code=`awk -F "=" '$1 == "my_code" {print $2}' version`
+            my_code=64
           else
             ver="6.60.0"; ver_code="6600300"; sn="7796011"; iv="6600310"
           fi
@@ -323,7 +324,7 @@ jobs:
         run: |
           pip install -U pip
           pip install -U wheel
-          pip install -U pyrogram tgcrypto
+          pip install pyrogram==2.0.41 tgcrypto==1.2.3
           pip install -U urllib3
 
       - name: Download release artifact
@@ -453,7 +454,7 @@ jobs:
           import inspect
           import os
           from pyrogram import Client
-          from pyrogram.types.input_media import InputMediaDocument
+          from pyrogram.types import InputMediaDocument
           async def main():
             session = os.environ["SESSION"]
             bot = Client(
@@ -515,10 +516,9 @@ jobs:
           RUN_URL: ${{ format('{0}/{1}/actions/runs/{2}', github.server_url, github.repository, github.run_id) }}
         run: |
           import asyncio
-          import inspect
           import os
           from pyrogram import Client
-          from pyrogram.types.input_media import InputMediaDocument
+          from pyrogram.types import InputMediaDocument
           async def main():
             session = os.environ["SESSION"]
             bot = Client(
