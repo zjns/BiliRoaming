@@ -87,6 +87,7 @@ class XposedInit : IXposedHookLoadPackage, IXposedHookZygoteInit {
                     if (BuildConfig.DEBUG) {
                         startHook(SSLHook(lpparam.classLoader))
                         startHook(MossDebugHook(lpparam.classLoader))
+                        startHook(OkHttpDebugHook(lpparam.classLoader))
                     }
                     if (isLSPBuiltIn) {
                         startHook(AppUpgradeHook(lpparam.classLoader))
