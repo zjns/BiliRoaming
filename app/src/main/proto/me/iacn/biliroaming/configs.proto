@@ -21,17 +21,52 @@ message Field {
 message Request {
   optional Class class = 1;
   optional Field url = 2;
-  optional Class class_request = 3;
-  optional Class response_builder = 4;
-  repeated Field response_build_fields = 5;
-  optional Class response_body = 6;
-  optional Method create = 7;
-  optional Class media_type = 8;
-  optional Method get = 9;
-  optional Class real_call = 10;
-  optional Method execute = 11;
-  optional Field real_call_request = 12;
-  optional Class protocol = 13;
+}
+
+message Response {
+  optional Class class = 1;
+  optional Field request = 2;
+  optional Field code = 3;
+  optional Field body = 4;
+}
+
+message ResponseBuilder {
+  optional Class class = 1;
+  repeated Field fields = 2;
+}
+
+message ResponseBody {
+  optional Class class = 1;
+  optional Method create = 2;
+  optional Method string = 3;
+}
+
+message MediaType {
+  optional Class class = 1;
+  optional Method get = 2;
+}
+
+message RealCall {
+  optional Class class = 1;
+  optional Method execute = 2;
+  optional Field request = 3;
+}
+
+message OkHttp {
+  optional Request request = 1;
+  optional Response response = 2;
+  optional ResponseBuilder response_builder = 3;
+  optional ResponseBody response_body = 4;
+  optional MediaType mediaType = 5;
+  optional RealCall real_call = 6;
+  optional Class protocol = 7;
+}
+
+message Okio2 {
+  optional Class class = 1;
+  optional Class buffered_source = 2;
+  optional Method source = 3;
+  optional Method source_buffer = 4;
 }
 
 message Response {
@@ -280,6 +315,7 @@ message HookInfo {
   optional AppUpgrade app_upgrade = 500;
   optional DarkSwitch dark_switch = 501;
   optional ToolbarService toolbar_service = 502;
+  optional Okio2 okio2 = 503;
   optional MapIds map_ids = 2;
   int32 client_version_code = 3;
   int32 module_version_code = 4;
