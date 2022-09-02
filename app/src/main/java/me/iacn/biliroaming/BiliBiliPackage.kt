@@ -98,11 +98,13 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     }
     val pegasusFeedClass by Weak { mHookInfo.pegasusFeed.class_ from mClassLoader }
     val okhttpResponseClass by Weak { mHookInfo.okhttpResponse from mClassLoader }
-    val requestClass by Weak { mHookInfo.okHttp.classRequest from mClassLoader }
-    val responseBuilderClass by Weak { mHookInfo.okHttp.responseBuilder from mClassLoader }
-    val responseBodyClass by Weak { mHookInfo.okHttp.responseBody from mClassLoader }
-    val mediaTypeClass by Weak { mHookInfo.okHttp.mediaType from mClassLoader }
-    val realCallClass by Weak { mHookInfo.okHttp.realCall from mClassLoader }
+    val requestClass by Weak { mHookInfo.okHttp.request.class_ from mClassLoader }
+    val responseBuilderClass by Weak { mHookInfo.okHttp.responseBuilder.class_ from mClassLoader }
+    val responseBodyClass by Weak { mHookInfo.okHttp.responseBody.class_ from mClassLoader }
+    val mediaTypeClass by Weak { mHookInfo.okHttp.mediaType.class_ from mClassLoader }
+    val realCallClass by Weak { mHookInfo.okHttp.realCall.class_ from mClassLoader }
+    val okioClass by Weak { mHookInfo.okio2.class_ from mClassLoader }
+    val bufferedSourceClass by Weak { mHookInfo.okio2.bufferedSource from mClassLoader }
     val protocolClass by Weak { mHookInfo.okHttp.protocol from mClassLoader }
     val subtitleSpanClass by Weak { mHookInfo.subtitleSpan from mClassLoader }
     val chronosSwitchClass by Weak { mHookInfo.chronosSwitch from mClassLoader }
@@ -174,11 +176,16 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
 
     fun fastJsonParse() = mHookInfo.fastJson.parse.orNull
 
-    fun createResponseBody() = mHookInfo.okHttp.create.orNull
-    fun getMediaType() = mHookInfo.okHttp.get.orNull
-    fun executeCall() = mHookInfo.okHttp.execute.orNull
-    fun realCallRequestField() = mHookInfo.okHttp.realCallRequest.orNull
-    fun responseBuildFields() = mHookInfo.okHttp.responseBuildFieldsList.map { it.orNull }
+    fun createResponseBody() = mHookInfo.okHttp.responseBody.create.orNull
+    fun getMediaType() = mHookInfo.okHttp.mediaType.get.orNull
+    fun executeCall() = mHookInfo.okHttp.realCall.execute.orNull
+    fun realCallRequestField() = mHookInfo.okHttp.realCall.request.orNull
+    fun responseBuildFields() = mHookInfo.okHttp.responseBuilder.fieldsList.map { it.orNull }
+    fun responseCodeField() = mHookInfo.okHttp.response.code.orNull
+    fun responseBodyField() = mHookInfo.okHttp.response.body.orNull
+    fun responseBodyString() = mHookInfo.okHttp.responseBody.string.orNull
+    fun source() = mHookInfo.okio2.source.orNull
+    fun sourceBuffer() = mHookInfo.okio2.sourceBuffer.orNull
 
     fun colorArray() = mHookInfo.themeHelper.colorArray.orNull
 
@@ -196,7 +203,7 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
         it.class_ from mClassLoader to it.addSetting.orNull
     }
 
-    fun requestField() = mHookInfo.okHttp.request.orNull
+    fun requestField() = mHookInfo.okHttp.response.request.orNull
 
     fun likeMethod() = mHookInfo.section.method.orNull
 
@@ -224,7 +231,7 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
 
     fun defaultSpeed() = mHookInfo.playerCoreService.getDefaultSpeed.orNull
 
-    fun urlField() = mHookInfo.okHttp.url.orNull
+    fun urlField() = mHookInfo.okHttp.request.url.orNull
 
     fun gsonToJson() = mHookInfo.gsonHelper.toJson.orNull
 
@@ -662,45 +669,102 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                     ).asSequence().map {
                         dexHelper.decodeMethodIndex(it)?.declaringClass
                     }.find { it?.isEnum == true } ?: return@okHttp
-                request = field {
-                    name = responseClass.findFirstFieldByExactTypeOrNull(requestClass)?.name
-                        ?: return@field
-                }
-                url = field {
-                    name = requestClass.findFirstFieldByExactTypeOrNull(urlClass)?.name
-                        ?: return@field
-                }
-                classRequest = class_ { name = requestClass.name }
-                val responseBuilderClass = responseClass.declaredConstructors.firstOrNull()
-                    ?.parameterTypes?.firstOrNull() ?: return@okHttp
-                responseBuilder = class_ { name = responseBuilderClass.name }
-                buildList {
-                    val findField = { type: Class<*>? ->
-                        responseBuilderClass.findFirstFieldByExactTypeOrNull(type)?.name
+                request = request {
+                    class_ = class_ { name = requestClass.name }
+                    url = field {
+                        name = requestClass.findFirstFieldByExactTypeOrNull(urlClass)?.name
+                            ?: return@field
                     }
-                    findField(requestClass)?.also { add(it) } ?: return@buildList
-                    findField(protocolClass)?.also { add(it) } ?: return@buildList
-                    findField(Int::class.javaPrimitiveType)?.also { add(it) } ?: return@buildList
-                    findField(String::class.java)?.also { add(it) } ?: return@buildList
-                    findField(responseBodyClass)?.also { add(it) } ?: return@buildList
-                }.takeIf { it.size == 5 }?.map { field { name = it } }?.also {
-                    responseBuildFields += it
-                } ?: return@okHttp
-                responseBody = class_ { name = responseBodyClass.name }
-                create = method {
-                    name = responseBodyClass.methods.find {
-                        it.isStatic && it.parameterTypes.count() == 2 && it.parameterTypes[1] == String::class.java
-                    }?.name ?: return@okHttp
                 }
-                mediaType = class_ { name = getMethod.declaringClass.name }
-                get = method { name = getMethod.name }
-                realCall = class_ { name = realCallClass.name }
-                execute = method { name = executeMethod.name }
-                realCallRequest = field {
-                    name = realCallClass.findFirstFieldByExactTypeOrNull(requestClass)?.name
-                        ?: return@okHttp
+                response = response {
+                    class_ = class_ { name = responseClass.name }
+                    request = field {
+                        name = responseClass.findFirstFieldByExactTypeOrNull(requestClass)?.name
+                            ?: return@field
+                    }
+                    code = field {
+                        val intType = Int::class.javaPrimitiveType!!
+                        name = responseClass.findFirstFieldByExactTypeOrNull(intType)?.name
+                            ?: return@field
+                    }
+                    body = field {
+                        name = responseClass.findFirstFieldByExactTypeOrNull(responseBodyClass)
+                            ?.name ?: return@field
+                    }
+                }
+                responseBuilder = responseBuilder {
+                    val responseBuilderClass = responseClass.declaredConstructors.firstOrNull()
+                        ?.parameterTypes?.firstOrNull() ?: return@responseBuilder
+                    class_ = class_ { name = responseBuilderClass.name }
+                    buildList {
+                        val findField = { type: Class<*>? ->
+                            responseBuilderClass.findFirstFieldByExactTypeOrNull(type)?.name
+                        }
+                        findField(requestClass)?.also { add(it) } ?: return@buildList
+                        findField(protocolClass)?.also { add(it) } ?: return@buildList
+                        findField(Int::class.javaPrimitiveType)?.also { add(it) }
+                            ?: return@buildList
+                        findField(String::class.java)?.also { add(it) } ?: return@buildList
+                        findField(responseBodyClass)?.also { add(it) } ?: return@buildList
+                    }.takeIf { it.size == 5 }?.map { field { name = it } }?.also {
+                        fields += it
+                    } ?: return@responseBuilder
+                }
+                responseBody = responseBody {
+                    class_ = class_ { name = responseBodyClass.name }
+                    create = method {
+                        name = responseBodyClass.methods.find {
+                            it.isStatic && it.parameterTypes.count() == 2 && it.parameterTypes[1] == String::class.java
+                        }?.name ?: return@method
+                    }
+                    string = method {
+                        name = responseBodyClass.methods.find {
+                            it.parameterTypes.isEmpty() && it.returnType == String::class.java
+                        }?.name ?: return@method
+                    }
+                }
+                mediaType = mediaType {
+                    class_ = class_ { name = getMethod.declaringClass.name }
+                    get = method { name = getMethod.name }
+                }
+                realCall = realCall {
+                    class_ = class_ { name = realCallClass.name }
+                    execute = method { name = executeMethod.name }
+                    request = field {
+                        name = realCallClass.findFirstFieldByExactTypeOrNull(requestClass)?.name
+                            ?: return@realCall
+                    }
                 }
                 protocol = class_ { name = protocolClass.name }
+            }
+            okio2 = okio2 {
+                val okioClass = "okio.Okio".from(classloader)
+                    ?: dexHelper.findMethodUsingString(
+                        "getsockname failed",
+                        false,
+                        -1,
+                        -1,
+                        null,
+                        -1,
+                        null,
+                        null,
+                        null,
+                        false
+                    ).asSequence().firstNotNullOfOrNull {
+                        dexHelper.decodeMethodIndex(it).takeIf { m ->
+                            m != null && m.isFinal
+                        }
+                    }?.declaringClass ?: return@okio2
+                class_ = class_ { name = okioClass.name }
+                val sourceMethod = okioClass.methods.find {
+                    it.parameterTypes.size == 1 && it.parameterTypes[0] == InputStream::class.java
+                } ?: return@okio2
+                val sourceBufferMethod = okioClass.methods.find {
+                    it.parameterTypes.size == 1 && it.parameterTypes[0] == sourceMethod.returnType
+                } ?: return@okio2
+                bufferedSource = class_ { name = sourceBufferMethod.returnType.name }
+                source = method { name = sourceMethod.name }
+                sourceBuffer = method { name = sourceBufferMethod.name }
             }
             fastJson = fastJson {
                 val fastJsonClass = dexHelper.findMethodUsingString(

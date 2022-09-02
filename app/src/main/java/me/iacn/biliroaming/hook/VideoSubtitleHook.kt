@@ -91,10 +91,10 @@ class VideoSubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
 
         if (!genSub || !useLocalDict) return
         instance.realCallClass?.hookBeforeMethod(instance.executeCall()) { param ->
-            val request = param.thisObject.getObjectField(instance.realCallRequestField())
-                ?: return@hookBeforeMethod
-            val url = request.getObjectField(instance.urlField())?.toString()
-                ?: return@hookBeforeMethod
+            val requestField = instance.realCallRequestField() ?: return@hookBeforeMethod
+            val urlField = instance.urlField() ?: return@hookBeforeMethod
+            val request = param.thisObject.getObjectField(requestField) ?: return@hookBeforeMethod
+            val url = request.getObjectField(urlField)?.toString() ?: return@hookBeforeMethod
             if (url.contains(fakeConvertApi)) {
                 val subUrl = Uri.parse(url).let { uri ->
                     Uri.parse(uri.getQueryParameter("sub_url"))
