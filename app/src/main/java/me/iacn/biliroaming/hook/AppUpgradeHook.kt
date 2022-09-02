@@ -57,10 +57,11 @@ class AppUpgradeHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 }
             }
             instance.realCallClass?.hookBeforeMethod(instance.executeCall()) { param ->
-                val request = param.thisObject.getObjectField(instance.realCallRequestField())
+                val requestField = instance.realCallRequestField() ?: return@hookBeforeMethod
+                val urlField = instance.urlField() ?: return@hookBeforeMethod
+                val request = param.thisObject.getObjectField(requestField)
                     ?: return@hookBeforeMethod
-                val url = request.getObjectField(instance.urlField())?.toString()
-                    ?: return@hookBeforeMethod
+                val url = request.getObjectField(urlField)?.toString() ?: return@hookBeforeMethod
                 if (url.contains(biliUpgradeApi)) {
                     val protocol = instance.protocolClass?.fields?.get(0)?.get(null)
                         ?: return@hookBeforeMethod
