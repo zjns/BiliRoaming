@@ -17,6 +17,7 @@ object SeasonRcmdHook : ApiHook {
         val json = JSONObject(response)
         val cards = json.optJSONObject("result")
             ?.optJSONArray("cards") ?: return response
+        var changed = false
         val toRemoveIdxList = mutableListOf<Int>()
         var index = 0
         for (card in cards) {
@@ -24,9 +25,11 @@ object SeasonRcmdHook : ApiHook {
                 toRemoveIdxList.add(index)
             index++
         }
+        if (toRemoveIdxList.isNotEmpty())
+            changed = true
         toRemoveIdxList.reversed().forEach {
             cards.remove(it)
         }
-        return json.toString()
+        return if (changed) json.toString() else response
     }
 }
