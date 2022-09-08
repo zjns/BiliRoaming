@@ -163,6 +163,9 @@
     <string name="share_log_summary">可能在舊版無效</string>
     <string name="enable_download_subtitle_title">啟用番劇字幕下載功能</string>
     <string name="enable_download_subtitle_summary">需開啟解鎖番劇限制選項，此功能才會生效。功能入口：播放詳情頁右上角三點 -> 字幕下載。字幕載入完成後入口才能顯示。</string>
+    <string name="skin_title">導入自製主題</string>
+    <string name="skin_summary">重啟後，須等待十幾秒下載資源，然後再重啟</string>
+    <string name="skin_import_from_file">從json文件導入</string>
     <string name="purify_banner_ads_title">淨化輪播圖廣告</string>
     <string name="purify_banner_ads_summary">淨化追番、影視等版塊輪播圖廣告</string>
     <string name="replace_story_video_title">取代豎版影片</string>
