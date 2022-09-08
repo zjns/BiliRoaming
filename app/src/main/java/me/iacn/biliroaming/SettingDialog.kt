@@ -6,6 +6,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Activity.RESULT_CANCELED
 import android.app.AlertDialog
+import android.app.Dialog
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -104,6 +105,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             findPreference("customize_drawer")?.onPreferenceClickListener = this
             findPreference("custom_link")?.onPreferenceClickListener = this
             findPreference("add_custom_button")?.onPreferenceChangeListener = this
+            findPreference("skin")?.onPreferenceChangeListener = this
             findPreference("customize_dynamic")?.onPreferenceClickListener = this
             checkCompatibleVersion()
             searchItems = retrieve(preferenceScreen)
@@ -350,6 +352,11 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                         showCustomSubtitle()
                 }
 
+                "skin" -> {
+                    if (newValue as Boolean)
+                        onSkinClick()
+                }
+
                 "add_custom_button" -> {
                     if (newValue as Boolean)
                         onAddCustomButtonClick()
@@ -380,8 +387,10 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                         SPLASH_SELECTION ->
                             File(currentContext.filesDir, SplashHook.SPLASH_IMAGE)
 
+
                         LOGO_SELECTION ->
                             File(currentContext.filesDir, SplashHook.LOGO_IMAGE)
+
 
                         else -> null
                     } ?: return
@@ -397,6 +406,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                     val dest = FileOutputStream(destFile)
                     stream.writeTo(dest)
                 }
+
 
                 PREF_EXPORT, PREF_IMPORT -> {
                     val file = File(currentContext.filesDir, "../shared_prefs/biliroaming.xml")
@@ -415,6 +425,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                             Log.toast("请至少重新打开哔哩漫游设置", true)
                         }
 
+
                         PREF_EXPORT -> {
                             try {
                                 file.inputStream().use { input ->
@@ -425,6 +436,20 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                                 Log.toast(e.message ?: "未知错误", true, alsoLog = true)
                             }
                         }
+                    }
+                }
+
+                SKIN_IMPORT -> {
+                    val uri = data?.data
+                    if (resultCode == RESULT_CANCELED || uri == null) return
+                    try {
+                        activity.contentResolver.openInputStream(uri)
+                            ?.bufferedReader()?.use {
+                                skinInput?.setText(it.readText().trim())
+                            }
+                    } catch (e: Exception) {
+                        Log.e(e)
+                        Log.toast(e.message ?: "")
                     }
                 }
 
@@ -774,6 +799,48 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             return true
         }
 
+        private var skinInput: EditText? = null
+        private fun onSkinClick(): Boolean {
+            val view = EditText(activity)
+            skinInput = view
+            view.setText(sPrefs.getString("skin_json", null).orEmpty())
+            AlertDialog.Builder(activity)
+                .setTitle(R.string.skin_title)
+                .setView(view)
+                .setPositiveButton(android.R.string.ok, null)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setNeutralButton(R.string.skin_import_from_file, null)
+                .create().apply {
+                    setOnShowListener {
+                        getButton(Dialog.BUTTON_POSITIVE)?.setOnClickListener {
+                            val text = view.text.toString().trim()
+                            if (text.runCatchingOrNull { toJSONObject() } == null) {
+                                Log.toast("请填入有效的json格式主题", true)
+                                return@setOnClickListener
+                            }
+                            sPrefs.edit().putString("skin_json", text).apply()
+                            Log.toast("导入成功 重启两次后生效", true)
+                            dismiss()
+                        }
+                        getButton(Dialog.BUTTON_NEUTRAL)?.setOnClickListener {
+                            try {
+                                startActivityForResult(
+                                    Intent.createChooser(Intent().apply {
+                                        action = Intent.ACTION_GET_CONTENT
+                                        type = "application/json"
+                                        addCategory(Intent.CATEGORY_OPENABLE)
+                                    }, "选择文件"),
+                                    SKIN_IMPORT
+                                )
+                            } catch (ex: ActivityNotFoundException) {
+                                Log.toast("文件选择器打开失败", true)
+                            }
+                        }
+                    }
+                }.show()
+            return true
+        }
+
         private fun onCustomDynamicClick(): Boolean {
             DynamicFilterDialog(activity, prefs).create().also { dialog ->
                 dialog.setOnShowListener {
@@ -1005,6 +1072,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
         const val LOGO_SELECTION = 1
         const val PREF_IMPORT = 2
         const val PREF_EXPORT = 3
+        const val SKIN_IMPORT = 100
         const val VIDEO_EXPORT = 4
     }
 }
