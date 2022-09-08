@@ -1,10 +1,7 @@
 package me.iacn.biliroaming.hook
 
 import me.iacn.biliroaming.BiliBiliPackage.Companion.instance
-import me.iacn.biliroaming.hook.api.ApiHook
-import me.iacn.biliroaming.hook.api.BannerV3AdHook
-import me.iacn.biliroaming.hook.api.CardsHook
-import me.iacn.biliroaming.hook.api.SeasonRcmdHook
+import me.iacn.biliroaming.hook.api.*
 import me.iacn.biliroaming.utils.*
 import java.net.HttpURLConnection
 
@@ -16,6 +13,7 @@ class OkHttpHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         apiHooks.add(SeasonRcmdHook)
         apiHooks.add(CardsHook)
         apiHooks.add(BannerV3AdHook)
+        apiHooks.add(SkinHook)
     }
 
     override fun startHook() {
