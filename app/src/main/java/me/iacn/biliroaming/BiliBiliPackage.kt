@@ -124,7 +124,13 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val toastHelperClass by Weak { mHookInfo.toastHelper.class_ from mClassLoader }
     val upgradeUtilsClass by Weak { mHookInfo.appUpgrade.upgradeUtils from mClassLoader }
     val writeChannelMethod get() = mHookInfo.appUpgrade.writeChannel.orNull
+    val writeInfoMethod get() = mHookInfo.appUpgrade.writeInfo.orNull
+    val cleanApkDirMethod get() = mHookInfo.appUpgrade.cleanApkDir.orNull
     val helpFragmentClass by Weak { mHookInfo.appUpgrade.helpFragment from mClassLoader }
+    val supplierClass by Weak { mHookInfo.appUpgrade.supplier from mClassLoader }
+    val checkMethod get() = mHookInfo.appUpgrade.check.orNull
+    val upgradeInfoClass by Weak { mHookInfo.appUpgrade.upgradeInfo from mClassLoader }
+    val versionExceptionClass by Weak { mHookInfo.appUpgrade.versionException from mClassLoader }
     val userFragmentClass by Weak { mHookInfo.darkSwitch.userFragment from mClassLoader }
     val themeUtilsClass by Weak { mHookInfo.darkSwitch.themeUtils from mClassLoader }
     val switchDarkModeMethod get() = mHookInfo.darkSwitch.switchDarkMode.orNull
@@ -146,9 +152,7 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val playerFullStoryWidgetClass by Weak { mHookInfo.playerFullStoryWidget.class_ from mClassLoader }
     val okioClass by Weak { mHookInfo.okio2.class_ from mClassLoader }
     val bufferedSourceClass by Weak { mHookInfo.okio2.bufferedSource from mClassLoader }
-    val responseBuilderClass by Weak { mHookInfo.okHttp.responseBuilder.class_ from mClassLoader }
     val realCallClass by Weak { mHookInfo.okHttp.realCall.class_ from mClassLoader }
-    val protocolClass by Weak { mHookInfo.okHttp.protocol from mClassLoader }
     val responseBodyClass by Weak { mHookInfo.okHttp.responseBody.class_ from mClassLoader }
     val mediaTypeClass by Weak { mHookInfo.okHttp.mediaType.class_ from mClassLoader }
     val biliCallClass by Weak { mHookInfo.biliCall.class_ from mClassLoader }
@@ -278,8 +282,6 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     fun execute() = mHookInfo.okHttp.realCall.execute.orNull
 
     fun realCallRequestField() = mHookInfo.okHttp.realCall.request.orNull
-
-    fun responseBuilderFields() = mHookInfo.okHttp.responseBuilder.fieldsList.map { it.orNull }
 
     fun codeField() = mHookInfo.okHttp.response.code.orNull
 
@@ -443,8 +445,6 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 ).asSequence().firstNotNullOfOrNull {
                     dexHelper.decodeMethodIndex(it)
                 } ?: return@appUpgrade
-                writeChannel = method { name = writeChannelMethod.name }
-                upgradeUtils = class_ { name = writeChannelMethod.declaringClass.name }
                 val helpFragmentClass = "com.bilibili.app.preferences.fragment.HelpFragment"
                     .from(classloader) ?: dexHelper.findMethodUsingString(
                     "url_join_us",
@@ -460,7 +460,82 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 ).asSequence().firstNotNullOfOrNull {
                     dexHelper.decodeMethodIndex(it)
                 }?.declaringClass ?: return@appUpgrade
+                val checkMethodIndex = dexHelper.findMethodUsingString(
+                    "Do sync http request.",
+                    false,
+                    -1,
+                    -1,
+                    null,
+                    -1,
+                    null,
+                    null,
+                    null,
+                    true
+                ).firstOrNull() ?: return@appUpgrade
+                val checkMethod = dexHelper.decodeMethodIndex(checkMethodIndex) as Method
+                val upgradeInfoClass = checkMethod.returnType
+                val upgradeUtilsClass = writeChannelMethod.declaringClass
+                val writeInfoMethod = upgradeUtilsClass.methods.find { it.name == "writeInfo" }
+                    ?: dexHelper.findMethodInvoking(
+                        checkMethodIndex,
+                        -1,
+                        -1,
+                        null,
+                        -1,
+                        longArrayOf(
+                            dexHelper.encodeClassIndex(Context::class.java),
+                            dexHelper.encodeClassIndex(upgradeInfoClass)
+                        ),
+                        null,
+                        null,
+                        true
+                    ).asSequence().firstNotNullOfOrNull {
+                        dexHelper.decodeMethodIndex(it)
+                    } ?: return@appUpgrade
+                val cleanApkDirMethod = upgradeUtilsClass.methods.find { it.name == "cleanApkDir" }
+                    ?: dexHelper.findMethodInvoking(
+                        checkMethodIndex,
+                        -1,
+                        -1,
+                        null,
+                        -1,
+                        longArrayOf(
+                            dexHelper.encodeClassIndex(Context::class.java),
+                            dexHelper.encodeClassIndex(Boolean::class.javaPrimitiveType!!)
+                        ),
+                        null,
+                        null,
+                        true
+                    ).asSequence().firstNotNullOfOrNull {
+                        dexHelper.decodeMethodIndex(it)
+                    } ?: return@appUpgrade
+                val versionExceptionClass =
+                    "tv.danmaku.bili.update.internal.exception.LatestVersionException"
+                        .from(classloader) ?: dexHelper.findMethodInvoking(
+                        checkMethodIndex,
+                        -1,
+                        -1,
+                        "VL",
+                        -1,
+                        longArrayOf(dexHelper.encodeClassIndex(String::class.java)),
+                        null,
+                        null,
+                        false
+                    ).asSequence().firstNotNullOfOrNull {
+                        dexHelper.decodeMethodIndex(it)?.takeIf { m ->
+                            m is Constructor<*> && Exception::class.java.isAssignableFrom(m.declaringClass)
+                                    && m.declaringClass.name != Exception::class.java.name
+                        }?.declaringClass
+                    } ?: return@appUpgrade
+                upgradeUtils = class_ { name = upgradeUtilsClass.name }
+                writeChannel = method { name = writeChannelMethod.name }
+                writeInfo = method { name = writeInfoMethod.name }
+                cleanApkDir = method { name = cleanApkDirMethod.name }
                 helpFragment = class_ { name = helpFragmentClass.name }
+                supplier = class_ { name = checkMethod.declaringClass.name }
+                check = method { name = checkMethod.name }
+                upgradeInfo = class_ { name = upgradeInfoClass.name }
+                versionException = class_ { name = versionExceptionClass.name }
             }
             darkSwitch = darkSwitch {
                 val userFragmentClass = "tv.danmaku.bili.ui.main2.mine.HomeUserCenterFragment"
@@ -675,21 +750,6 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 ).asSequence().firstNotNullOfOrNull {
                     dexHelper.decodeMethodIndex(it)
                 } ?: return@okHttp
-                val protocolClass = "okhttp3.Protocol".from(classloader)
-                    ?: dexHelper.findMethodUsingString(
-                        "Unexpected protocol: ",
-                        false,
-                        -1,
-                        -1,
-                        null,
-                        -1,
-                        null,
-                        null,
-                        null,
-                        false
-                    ).asSequence().map {
-                        dexHelper.decodeMethodIndex(it)?.declaringClass
-                    }.find { it?.isEnum == true } ?: return@okHttp
                 request = request {
                     class_ = class_ { name = requestClass.name }
                     url = field {
@@ -730,24 +790,6 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                     class_ = class_ { name = getMethod.declaringClass.name }
                     get = method { name = getMethod.name }
                 }
-                responseBuilder = responseBuilder {
-                    val responseBuilderClass = responseClass.declaredConstructors.firstOrNull()
-                        ?.parameterTypes?.firstOrNull() ?: return@responseBuilder
-                    class_ = class_ { name = responseBuilderClass.name }
-                    buildList {
-                        val findField = { type: Class<*>? ->
-                            responseBuilderClass.findFirstFieldByExactTypeOrNull(type)?.name
-                        }
-                        findField(requestClass)?.also { add(it) } ?: return@buildList
-                        findField(protocolClass)?.also { add(it) } ?: return@buildList
-                        findField(Int::class.javaPrimitiveType)?.also { add(it) }
-                            ?: return@buildList
-                        findField(String::class.java)?.also { add(it) } ?: return@buildList
-                        findField(responseBodyClass)?.also { add(it) } ?: return@buildList
-                    }.takeIf { it.size == 5 }?.map { field { name = it } }?.also {
-                        fields += it
-                    } ?: return@responseBuilder
-                }
                 realCall = realCall {
                     class_ = class_ { name = realCallClass.name }
                     execute = method { name = executeMethod.name }
@@ -756,7 +798,6 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                             ?: return@realCall
                     }
                 }
-                protocol = class_ { name = protocolClass.name }
             }
             okio2 = okio2 {
                 val okioClass = "okio.Okio".from(classloader)
