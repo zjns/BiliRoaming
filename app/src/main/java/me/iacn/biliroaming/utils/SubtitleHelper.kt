@@ -10,6 +10,8 @@ import org.json.JSONObject
 import java.io.*
 import java.net.URL
 import java.nio.ByteBuffer
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.zip.GZIPInputStream
 
 class TrieNode<V>(val key: Char, val level: Int = 0) {
@@ -99,17 +101,20 @@ class Dictionary(
     }
 }
 
+@Suppress("UNUSED")
 object SubtitleHelper {
     private val dictFile by lazy { File(currentContext.filesDir, "t2cn.txt") }
     private val dictionary by lazy { Dictionary.loadDictionary(dictFile) }
     private const val dictUrl =
         "https://archive.biliimg.com/bfs/archive/566adec17e127bf92aed21832db0206ccecc8caa.png"
+    private const val checkInterval = 60 * 1000
 
     // !!! Do not remove symbol '\' for "\}", Android need it
     @Suppress("RegExpRedundantEscape")
     private val noStyleRegex =
         Regex("""\{\\?\\an\d+\}|<font\s[^>]*>|<\\?/font>|<i>|<\\?/i>|<b>|<\\?/b>|<u>|<\\?/u>""")
     val dictExist get() = dictFile.isFile
+    val executor: ExecutorService by lazy { Executors.newFixedThreadPool(1) }
 
     @Synchronized
     fun downloadDict(): Boolean {
@@ -136,6 +141,62 @@ object SubtitleHelper {
         return false
     }
 
+    fun checkDictUpdate(): String? {
+        val lastCheckTime = sCaches.getLong("subtitle_dict_last_check_time", 0)
+        if (System.currentTimeMillis() - lastCheckTime < checkInterval && dictExist)
+            return null
+        sCaches.edit().putLong("subtitle_dict_last_check_time", System.currentTimeMillis()).apply()
+        val url = moduleRes.getString(R.string.subtitle_dict_latest_url)
+        val json = runCatchingOrNull {
+            JSONObject(URL(url).readText())
+        } ?: return null
+        val tagName = json.optString("tag_name")
+        val latestVer = sCaches.getString("subtitle_dict_latest_version", null) ?: ""
+        if (latestVer != tagName || !dictExist) {
+            val sha256sum = json.optString("body")
+                .takeUnless { it.isNullOrEmpty() } ?: return null
+            var dictUrl = json.optJSONArray("assets")
+                ?.optJSONObject(0)?.optString("browser_download_url")
+                .takeUnless { it.isNullOrEmpty() } ?: return null
+            dictUrl = "https://ghproxy.com/$dictUrl"
+            runCatching {
+                dictFile.outputStream().use { o ->
+                    GZIPInputStream(URL(dictUrl).openStream())
+                        .use { it.copyTo(o) }
+                }
+            }.onSuccess {
+                if (dictFile.sha256sum == sha256sum) {
+                    sCaches.edit().putString("subtitle_dict_latest_version", tagName).apply()
+                    return dictFile.path
+                }
+                dictFile.delete()
+            }.onFailure {
+                Log.e(it)
+                dictFile.delete()
+            }
+        }
+        return null
+    }
+
+    fun reloadDict() {
+        dict(true)
+    }
+
+    @Volatile
+    private var dict: Dictionary? = null
+    private fun dict(reload: Boolean = false): Dictionary {
+        val d = dict
+        if (!reload && d != null)
+            return d
+        synchronized(this) {
+            var newD = dict
+            if (reload || newD == null)
+                newD = Dictionary.loadDictionary(dictFile)
+            dict = newD
+            return newD
+        }
+    }
+
     fun convert(json: String): String {
         val subJson = JSONObject(json)
         var subBody = subJson.optJSONArray("body") ?: return json
@@ -146,7 +207,7 @@ object SubtitleHelper {
                     || contains("<i>") || contains("<b>") || contains("<u>")
                 ) replace(noStyleRegex, "") else this
             }
-        val converted = dictionary.convert(subText)
+        val converted = dict().convert(subText)
         val lines = converted.split('\u0000')
         subBody.asSequence<JSONObject>().zip(lines.asSequence()).forEach { (obj, line) ->
             obj.put("content", line)
