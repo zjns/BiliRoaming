@@ -1,20 +1,20 @@
 package me.iacn.biliroaming.hook
 
+import android.content.Context
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Bundle
 import me.iacn.biliroaming.BiliBiliPackage.Companion.instance
 import me.iacn.biliroaming.BuildConfig
 import me.iacn.biliroaming.utils.*
 import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
-import java.lang.reflect.Method
 import java.net.URL
 
-data class BUpgradeInfo(
-    var versionSum: String,
-    var url: String,
-    var changelog: String,
+class BUpgradeInfo(
+    private val versionSum: String,
+    val url: String,
+    val changelog: String,
 ) {
     val version get() = versionSum.split(' ')[0]
     val versionCode get() = versionSum.split(' ')[1].toLong()
@@ -26,12 +26,12 @@ data class BUpgradeInfo(
     val buildTime get() = versionSum.split(' ')[7].toLong()
 }
 
+@Suppress("DEPRECATION")
 class AppUpgradeHook(classLoader: ClassLoader) : BaseHook(classLoader) {
-    private val biliUpgradeApi = "https://app.bilibili.com/x/v2/version/fawkes/upgrade"
-    private val upgradeCheckApi = "https://api.github.com/repos/zjns/BiliRoamingX/releases"
-
-    private val noUpdateResponse: String
-        get() = mapOf("code" to -304, "message" to "木有改动").toJson()
+    companion object {
+        private const val upgradeCheckApi =
+            "https://api.github.com/repos/zjns/BiliRoamingX/releases"
+    }
 
     override fun startHook() {
         instance.helpFragmentClass?.hookAfterMethod(
@@ -50,51 +50,54 @@ class AppUpgradeHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             val summary = "当前版本: $verName (release-b$buildSn)\n当前内置漫游版本: $mVerName ($mVerCode)"
             preference.callMethodOrNull("setSummary", summary)
         }
-        if (platform == "android") {
-            instance.upgradeUtilsClass?.run {
-                instance.writeChannelMethod?.let {
-                    replaceMethod(it, File::class.java, String::class.java) { null }
-                }
+        if (platform != "android") return
+
+        instance.upgradeUtilsClass?.run {
+            instance.writeChannelMethod?.let {
+                replaceMethod(it, File::class.java, String::class.java) { null }
             }
-            instance.realCallClass?.hookBeforeMethod(instance.execute()) { param ->
-                val requestField = instance.realCallRequestField() ?: return@hookBeforeMethod
-                val urlField = instance.urlField() ?: return@hookBeforeMethod
-                val request = param.thisObject.getObjectField(requestField)
-                    ?: return@hookBeforeMethod
-                val url = request.getObjectField(urlField)?.toString() ?: return@hookBeforeMethod
-                if (url.contains(biliUpgradeApi)) {
-                    val protocol = instance.protocolClass?.fields?.get(0)?.get(null)
-                        ?: return@hookBeforeMethod
-                    val mediaType = instance.mediaTypeClass
-                        ?.callStaticMethod(
-                            instance.get(),
-                            "application/json; charset=UTF-8"
-                        ) ?: return@hookBeforeMethod
-                    val content = runCatchingOrNull { checkUpgrade(url) } ?: noUpdateResponse
-                    val responseBody = instance.responseBodyClass
-                        ?.callStaticMethod(
-                            instance.create(),
-                            mediaType,
-                            content
-                        ) ?: return@hookBeforeMethod
-                    val responseBuildFields = instance.responseBuilderFields()
-                        .takeIf { it.isNotEmpty() } ?: return@hookBeforeMethod
-                    instance.responseBuilderClass?.new()
-                        ?.setObjectField(responseBuildFields[0], request)
-                        ?.setObjectField(responseBuildFields[1], protocol)
-                        ?.setIntField(responseBuildFields[2], 200)
-                        ?.setObjectField(responseBuildFields[3], "OK")
-                        ?.setObjectField(responseBuildFields[4], responseBody)
-                        ?.let { (param.method as Method).returnType.new(it) }
-                        ?.let { param.result = it }
+        }
+        instance.supplierClass?.hookBeforeMethod(
+            instance.checkMethod,
+            Context::class.java
+        ) { param ->
+            val context = param.args[0] as Context
+            val result = runCatchingOrNull { checkUpgrade() }
+            if (result == null) {
+                param.throwable = Exception("检查更新失败，请稍后再试/(ㄒoㄒ)/~~")
+                return@hookBeforeMethod
+            }
+            when (result.optInt("code", -1)) {
+                0 -> {
+                    val data = result.getJSONObject("data")
+                    val upgradeInfo = instance.fastJsonClass?.callStaticMethod(
+                        instance.fastJsonParse(),
+                        data.toString(),
+                        instance.upgradeInfoClass
+                    )
+                    instance.upgradeUtilsClass?.callStaticMethodOrNull(
+                        instance.writeInfoMethod, context, upgradeInfo
+                    )
+                    param.result = upgradeInfo
+                }
+                -304 -> {
+                    instance.upgradeUtilsClass?.callStaticMethodOrNull(
+                        instance.cleanApkDirMethod, context, true
+                    )
+                    param.throwable = instance.versionExceptionClass
+                        ?.new("您当前已经是最新版本了^_^") as Throwable
+                }
+                else -> {
+                    param.throwable = Exception("检查更新失败，请稍后再试/(ㄒoㄒ)/~~")
                 }
             }
         }
     }
 
-    private fun checkUpgrade(biliUrl: String): String {
-        val sn = Uri.parse(biliUrl).getQueryParameter("sn")?.toLongOrNull()
-            ?: return noUpdateResponse
+    private fun checkUpgrade(): JSONObject {
+        val sn = currentContext.packageManager.getApplicationInfo(
+            packageName, PackageManager.GET_META_DATA
+        ).metaData.getInt("BUILD_SN").toLong()
         val myVerCode = BuildConfig.VERSION_CODE
         val response = JSONArray(URL(upgradeCheckApi).readText())
         for (data in response) {
@@ -132,10 +135,10 @@ class AppUpgradeHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         "policy_url" to "",
                         "ptime" to info.buildTime,
                     )
-                ).toJson()
+                ).toJsonObject()
             }
             break
         }
-        return noUpdateResponse
+        return mapOf("code" to -304, "message" to "木有改动").toJsonObject()
     }
 }
