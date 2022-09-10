@@ -19,7 +19,7 @@ class OkHttpHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     override fun startHook() {
         if (apiHooks.all { !it.enabled }) return
 
-        instance.realCallClass?.hookAfterMethod(instance.executeCall()) { param ->
+        instance.realCallClass?.hookAfterMethod(instance.execute()) { param ->
             val response = param.result ?: return@hookAfterMethod
             val requestField = instance.realCallRequestField() ?: return@hookAfterMethod
             val urlField = instance.urlField() ?: return@hookAfterMethod
@@ -30,9 +30,9 @@ class OkHttpHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     continue
                 val okioClass = instance.okioClass ?: return@hookAfterMethod
                 val bufferedSourceClass = instance.bufferedSourceClass ?: return@hookAfterMethod
-                val codeField = instance.responseCodeField() ?: return@hookAfterMethod
-                val bodyField = instance.responseBodyField() ?: return@hookAfterMethod
-                val stringMethod = instance.responseBodyString() ?: return@hookAfterMethod
+                val codeField = instance.codeField() ?: return@hookAfterMethod
+                val bodyField = instance.bodyField() ?: return@hookAfterMethod
+                val stringMethod = instance.string() ?: return@hookAfterMethod
                 val sourceMethod = instance.source() ?: return@hookAfterMethod
                 val bufferMethod = instance.sourceBuffer() ?: return@hookAfterMethod
                 response.getIntField(codeField).takeIf { it == HttpURLConnection.HTTP_OK }
