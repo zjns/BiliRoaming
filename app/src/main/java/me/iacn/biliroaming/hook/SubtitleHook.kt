@@ -28,6 +28,7 @@ import org.json.JSONArray
 import java.io.File
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
+import java.util.concurrent.Callable
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.math.ceil
@@ -37,6 +38,8 @@ import kotlin.math.roundToInt
 class SubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     companion object {
         val fontFile by lazy { File(currentContext.getExternalFilesDir(null), "subtitle.font") }
+
+        var currentSubtitles = listOf<SubtitleItem>()
 
         val backgroundSpan = { backgroundColor: Int, textSize: Int ->
             LineBackgroundSpan { canvas, paint, left, right, top, _, bottom, text, start, end, _ ->
@@ -116,6 +119,11 @@ class SubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         }
     }
 
+    private val enableSubDownload by lazy {
+        sPrefs.getBoolean("main_func", false)
+                && sPrefs.getBoolean("enable_download_subtitle", false)
+    }
+
     private val mainFunc by lazy { sPrefs.getBoolean("main_func", false) }
     private val generateSubtitle by lazy { sPrefs.getBoolean("auto_generate_subtitle", false) }
     private val addCloseSubtitle by lazy { mainFunc && getVersionCode(packageName) >= 6750300 }
@@ -148,7 +156,7 @@ class SubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             } else {
                 hookSubtitleStyleNew()
             }
-        if (mainFunc || generateSubtitle)
+        if (mainFunc || generateSubtitle || enableSubDownload)
             hookSubtitleList()
     }
 
@@ -360,13 +368,16 @@ class SubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 }.let { extraSubtitles += it }
             }
 
-            if (extraSubtitles.isNotEmpty()) {
+            if (extraSubtitles.isNotEmpty() || enableSubDownload) {
                 val newRes = (dmViewReply ?: parseDmViewReply(param.result)
                 ?: dmViewReply { }).copy {
                     subtitle = subtitle.copy {
                         subtitles += extraSubtitles
+                        if (enableSubDownload)
+                            currentSubtitles = subtitles.filterNot { it.lan == "nodisplay" }
                     }
                 }
+                if (extraSubtitles.isEmpty()) return@hookAfterMethod
 
                 param.result = (param.method as Method).returnType
                     .callStaticMethod("parseFrom", newRes.toByteArray())
@@ -387,7 +398,11 @@ class SubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 arrayOf(instance.parserClass)
             ) { _, m, args ->
                 val dictReady = if (!SubtitleHelper.dictExist) {
-                    SubtitleHelper.downloadDict()
+                    runCatchingOrNull {
+                        SubtitleHelper.executor.submit(Callable {
+                            SubtitleHelper.checkDictUpdate()
+                        }).get(60, TimeUnit.SECONDS)
+                    } != null || SubtitleHelper.dictExist
                 } else true
                 val converted = if (dictReady) {
                     runCatching {
@@ -398,6 +413,14 @@ class SubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     }.getOrNull()
                         ?: SubtitleHelper.errorResponse(XposedInit.moduleRes.getString(R.string.subtitle_convert_failed))
                 } else SubtitleHelper.errorResponse(XposedInit.moduleRes.getString(R.string.subtitle_dict_download_failed))
+
+                runCatchingOrNull {
+                    SubtitleHelper.executor.execute {
+                        SubtitleHelper.checkDictUpdate()?.let {
+                            SubtitleHelper.reloadDict()
+                        }
+                    }
+                }
 
                 val mediaType = instance.mediaTypeClass
                     ?.callStaticMethod(
@@ -417,12 +440,17 @@ class SubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
 
     private fun JSONArray.toSubtitles(): List<SubtitleItem> {
         val subList = mutableListOf<SubtitleItem>()
+        val lanCodes = mutableSetOf<String>()
+        for (s in this)
+            lanCodes.add(s.optString("key"))
+        val replaceHans = "zh-Hans" !in lanCodes
         for (subtitle in this) {
             subtitleItem {
                 id = subtitle.optLong("id")
                 idStr = subtitle.optLong("id").toString()
                 subtitleUrl = subtitle.optString("url")
                 lan = subtitle.optString("key")
+                    .let { if (it == "cn" && replaceHans) "zh-Hans" else it }
                 lanDoc = subtitle.optString("title")
             }.let { subList.add(it) }
         }
