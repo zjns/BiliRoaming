@@ -121,8 +121,6 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val musicBackgroundPlayerClass by Weak { mHookInfo.musicNotification.musicBackgroundPlayer from mClassLoader }
     val kanbanCallbackClass by Weak { mHookInfo.kanBan.class_ from mClassLoader }
     val toastHelperClass by Weak { mHookInfo.toastHelper.class_ from mClassLoader }
-    val updaterOptionsClass by Weak { mHookInfo.appUpgrade.updaterOptions from mClassLoader }
-    val upgradeApiMethod get() = mHookInfo.appUpgrade.upgradeApi.orNull
     val upgradeUtilsClass by Weak { mHookInfo.appUpgrade.upgradeUtils from mClassLoader }
     val writeChannelMethod get() = mHookInfo.appUpgrade.writeChannel.orNull
     val helpFragmentClass by Weak { mHookInfo.appUpgrade.helpFragment from mClassLoader }
@@ -146,6 +144,11 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val playerQualityServiceClass by Weak { "com.bilibili.playerbizcommon.features.quality.PlayerQualityService" from mClassLoader }
     val mossResponseHandlerClass by Weak { "com.bilibili.lib.moss.api.MossResponseHandler" from mClassLoader }
     val projectionPlayUrlClass by Weak { "com.bilibili.lib.projection.internal.api.model.ProjectionPlayUrl" from mClassLoader }
+    val okioClass by Weak { mHookInfo.okio2.class_ from mClassLoader }
+    val bufferedSourceClass by Weak { mHookInfo.okio2.bufferedSource from mClassLoader }
+    val responseBuilderClass by Weak { mHookInfo.okHttp.responseBuilder.class_ from mClassLoader }
+    val realCallClass by Weak { mHookInfo.okHttp.realCall.class_ from mClassLoader }
+    val protocolClass by Weak { mHookInfo.okHttp.protocol from mClassLoader }
     val responseBodyClass by Weak { mHookInfo.okHttp.responseBody.class_ from mClassLoader }
     val mediaTypeClass by Weak { mHookInfo.okHttp.mediaType.class_ from mClassLoader }
     val biliCallClass by Weak { mHookInfo.biliCall.class_ from mClassLoader }
@@ -303,6 +306,20 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     fun musicPlayer() = mHookInfo.musicNotification.musicPlayer.orNull
 
     fun musicPlayerService() = mHookInfo.musicNotification.musicPlayerService.orNull
+
+    fun execute() = mHookInfo.okHttp.realCall.execute.orNull
+
+    fun realCallRequestField() = mHookInfo.okHttp.realCall.request.orNull
+
+    fun responseBuilderFields() = mHookInfo.okHttp.responseBuilder.fieldsList.map { it.orNull }
+
+    fun codeField() = mHookInfo.okHttp.response.code.orNull
+
+    fun bodyField() = mHookInfo.okHttp.response.body.orNull
+
+    fun source() = mHookInfo.okio2.source.orNull
+
+    fun sourceBuffer() = mHookInfo.okio2.sourceBuffer.orNull
 
     fun create() = mHookInfo.okHttp.responseBody.create.orNull
 
@@ -466,22 +483,6 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 }.forEach { ids[it.name] = it.get(null) as Int }
             }
             appUpgrade = appUpgrade {
-                val upgradeApiMethod = dexHelper.findMethodUsingString(
-                    "https://app.bilibili.com/x/v2/version/fawkes/upgrade",
-                    false,
-                    -1,
-                    -1,
-                    null,
-                    -1,
-                    null,
-                    null,
-                    null,
-                    true
-                ).asSequence().firstNotNullOfOrNull {
-                    dexHelper.decodeMethodIndex(it)
-                } ?: return@appUpgrade
-                upgradeApi = method { name = upgradeApiMethod.name }
-                updaterOptions = class_ { name = upgradeApiMethod.declaringClass.name }
                 val writeChannelMethod = dexHelper.findMethodUsingString(
                     "Channel info has already exist.",
                     false,
@@ -700,6 +701,49 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 ).asSequence().firstNotNullOfOrNull {
                     dexHelper.decodeMethodIndex(it)
                 } ?: return@okHttp
+                val realCallClass = dexHelper.findMethodUsingString(
+                    "web socket",
+                    false,
+                    -1,
+                    -1,
+                    null,
+                    -1,
+                    null,
+                    null,
+                    null,
+                    true
+                ).asSequence().firstNotNullOfOrNull {
+                    dexHelper.decodeMethodIndex(it)
+                }?.declaringClass ?: return@okHttp
+                val executeMethod = dexHelper.findMethodUsingString(
+                    "Already Executed",
+                    false,
+                    -1,
+                    0,
+                    null,
+                    dexHelper.encodeClassIndex(realCallClass),
+                    null,
+                    null,
+                    null,
+                    true
+                ).asSequence().firstNotNullOfOrNull {
+                    dexHelper.decodeMethodIndex(it)
+                } ?: return@okHttp
+                val protocolClass = "okhttp3.Protocol".from(classloader)
+                    ?: dexHelper.findMethodUsingString(
+                        "Unexpected protocol: ",
+                        false,
+                        -1,
+                        -1,
+                        null,
+                        -1,
+                        null,
+                        null,
+                        null,
+                        false
+                    ).asSequence().map {
+                        dexHelper.decodeMethodIndex(it)?.declaringClass
+                    }.find { it?.isEnum == true } ?: return@okHttp
                 request = request {
                     class_ = class_ { name = requestClass.name }
                     url = field {
@@ -712,6 +756,15 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                     request = field {
                         name = responseClass.findFirstFieldByExactTypeOrNull(requestClass)?.name
                             ?: return@field
+                    }
+                    code = field {
+                        val intType = Int::class.javaPrimitiveType!!
+                        name = responseClass.findFirstFieldByExactTypeOrNull(intType)?.name
+                            ?: return@field
+                    }
+                    body = field {
+                        name = responseClass.findFirstFieldByExactTypeOrNull(responseBodyClass)
+                            ?.name ?: return@field
                     }
                 }
                 responseBody = responseBody {
@@ -731,6 +784,62 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                     class_ = class_ { name = getMethod.declaringClass.name }
                     get = method { name = getMethod.name }
                 }
+                responseBuilder = responseBuilder {
+                    val responseBuilderClass = responseClass.declaredConstructors.firstOrNull()
+                        ?.parameterTypes?.firstOrNull() ?: return@responseBuilder
+                    class_ = class_ { name = responseBuilderClass.name }
+                    buildList {
+                        val findField = { type: Class<*>? ->
+                            responseBuilderClass.findFirstFieldByExactTypeOrNull(type)?.name
+                        }
+                        findField(requestClass)?.also { add(it) } ?: return@buildList
+                        findField(protocolClass)?.also { add(it) } ?: return@buildList
+                        findField(Int::class.javaPrimitiveType)?.also { add(it) }
+                            ?: return@buildList
+                        findField(String::class.java)?.also { add(it) } ?: return@buildList
+                        findField(responseBodyClass)?.also { add(it) } ?: return@buildList
+                    }.takeIf { it.size == 5 }?.map { field { name = it } }?.also {
+                        fields += it
+                    } ?: return@responseBuilder
+                }
+                realCall = realCall {
+                    class_ = class_ { name = realCallClass.name }
+                    execute = method { name = executeMethod.name }
+                    request = field {
+                        name = realCallClass.findFirstFieldByExactTypeOrNull(requestClass)?.name
+                            ?: return@realCall
+                    }
+                }
+                protocol = class_ { name = protocolClass.name }
+            }
+            okio2 = okio2 {
+                val okioClass = "okio.Okio".from(classloader)
+                    ?: dexHelper.findMethodUsingString(
+                        "getsockname failed",
+                        false,
+                        -1,
+                        -1,
+                        null,
+                        -1,
+                        null,
+                        null,
+                        null,
+                        false
+                    ).asSequence().firstNotNullOfOrNull {
+                        dexHelper.decodeMethodIndex(it).takeIf { m ->
+                            m != null && m.isFinal
+                        }
+                    }?.declaringClass ?: return@okio2
+                class_ = class_ { name = okioClass.name }
+                val sourceMethod = okioClass.methods.find {
+                    it.parameterTypes.size == 1 && it.parameterTypes[0] == InputStream::class.java
+                } ?: return@okio2
+                val sourceBufferMethod = okioClass.methods.find {
+                    it.parameterTypes.size == 1 && it.parameterTypes[0] == sourceMethod.returnType
+                } ?: return@okio2
+                bufferedSource = class_ { name = sourceBufferMethod.returnType.name }
+                source = method { name = sourceMethod.name }
+                sourceBuffer = method { name = sourceBufferMethod.name }
             }
             fastJson = fastJson {
                 val fastJsonClass = dexHelper.findMethodUsingString(
