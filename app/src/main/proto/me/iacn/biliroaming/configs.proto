@@ -30,11 +30,6 @@ message Response {
   optional Field body = 4;
 }
 
-message ResponseBuilder {
-  optional Class class = 1;
-  repeated Field fields = 2;
-}
-
 message ResponseBody {
   optional Class class = 1;
   optional Method create = 2;
@@ -44,6 +39,11 @@ message ResponseBody {
 message MediaType {
   optional Class class = 1;
   optional Method get = 2;
+}
+
+message ResponseBuilder {
+  optional Class class = 1;
+  repeated Field fields = 2;
 }
 
 message RealCall {
@@ -55,10 +55,10 @@ message RealCall {
 message OkHttp {
   optional Request request = 1;
   optional Response response = 2;
-  optional ResponseBuilder response_builder = 3;
-  optional ResponseBody response_body = 4;
-  optional MediaType mediaType = 5;
-  optional RealCall real_call = 6;
+  optional ResponseBody response_body = 3;
+  optional MediaType mediaType = 4;
+  optional ResponseBuilder response_builder = 5;
+  optional RealCall realCall = 6;
   optional Class protocol = 7;
 }
 
@@ -67,29 +67,6 @@ message Okio2 {
   optional Class buffered_source = 2;
   optional Method source = 3;
   optional Method source_buffer = 4;
-}
-
-message Response {
-  optional Class class = 1;
-  optional Field request = 2;
-}
-
-message ResponseBody {
-  optional Class class = 1;
-  optional Method create = 2;
-  optional Method string = 3;
-}
-
-message MediaType {
-  optional Class class = 1;
-  optional Method get = 2;
-}
-
-message OkHttp {
-  optional Request request = 1;
-  optional Response response = 2;
-  optional ResponseBody response_body = 3;
-  optional MediaType mediaType = 4;
 }
 
 message FastJson {
