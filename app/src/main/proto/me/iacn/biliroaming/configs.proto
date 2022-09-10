@@ -41,11 +41,6 @@ message MediaType {
   optional Method get = 2;
 }
 
-message ResponseBuilder {
-  optional Class class = 1;
-  repeated Field fields = 2;
-}
-
 message RealCall {
   optional Class class = 1;
   optional Method execute = 2;
@@ -57,9 +52,7 @@ message OkHttp {
   optional Response response = 2;
   optional ResponseBody response_body = 3;
   optional MediaType mediaType = 4;
-  optional ResponseBuilder response_builder = 5;
-  optional RealCall realCall = 6;
-  optional Class protocol = 7;
+  optional RealCall realCall = 5;
 }
 
 message Okio2 {
@@ -225,9 +218,15 @@ message Settings {
 }
 
 message AppUpgrade {
-  optional Class upgrade_utils = 2;
-  optional Class help_fragment = 3;
-  optional Method write_channel = 5;
+  optional Class upgrade_utils = 1;
+  optional Method write_channel = 2;
+  optional Method write_info = 3;
+  optional Method clean_apk_dir = 4;
+  optional Class help_fragment = 5;
+  optional Class supplier = 6;
+  optional Method check = 7;
+  optional Class upgrade_info = 8;
+  optional Class version_exception = 9;
 }
 
 message DarkSwitch {
