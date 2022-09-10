@@ -808,7 +808,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                 .setTitle(R.string.skin_title)
                 .setView(view)
                 .setPositiveButton(android.R.string.ok, null)
-                .setNegativeButton(android.R.string.cancel, null)
+                .setNegativeButton("获取", null)
                 .setNeutralButton(R.string.skin_import_from_file, null)
                 .create().apply {
                     setOnShowListener {
@@ -835,6 +835,11 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                             } catch (ex: ActivityNotFoundException) {
                                 Log.toast("文件选择器打开失败", true)
                             }
+                        }
+                        getButton(Dialog.BUTTON_NEGATIVE)?.setOnClickListener {
+                            val uri = Uri.parse("https://github.com/Rovniced/bilibili-skin")
+                            val intent = Intent(Intent.ACTION_VIEW, uri)
+                            startActivity(intent)
                         }
                     }
                 }.show()
