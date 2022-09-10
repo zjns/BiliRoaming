@@ -10,7 +10,7 @@ import android.os.Build
 import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
 import me.iacn.biliroaming.BiliBiliPackage
-import me.iacn.biliroaming.hook.VideoSubtitleHook.Companion.currentSubtitles
+import me.iacn.biliroaming.hook.SubtitleHook.Companion.currentSubtitles
 import me.iacn.biliroaming.utils.*
 import me.iacn.biliroaming.utils.SubtitleHelper.convertToSrt
 import me.iacn.biliroaming.utils.SubtitleHelper.reSort
@@ -23,9 +23,12 @@ import java.net.URL
 class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
 
     private var currentVideoTitle: String? = null
+    private var preventFinish = false
 
     override fun startHook() {
-        if (!enable) return
+        if (!(sPrefs.getBoolean("main_func", false)
+                    && sPrefs.getBoolean("enable_download_subtitle", false))
+        ) return
 
         "com.bapis.bilibili.app.view.v1.ViewMoss".from(mClassLoader)?.run {
             hookBeforeMethod(
@@ -75,7 +78,10 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         ?: return@forEach
                     thiz.contentResolver.openOutputStream(subFileDoc.uri, "wt")?.use { os ->
                         runCatching {
-                            val json = JSONObject(URL(url).readText())
+                            var text = URL(url).readText()
+                            if (url.contains("zh_converter=t2cn"))
+                                text = SubtitleHelper.convert(text)
+                            val json = JSONObject(text)
                             val body = json.getJSONArray("body")
                                 .removeSubAppendedInfo().reSort()
                             json.put("body", body)
@@ -184,51 +190,42 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         }
     }
 
-    companion object {
-        private val enable by lazy {
-            sPrefs.getBoolean("main_func", false)
-                    && sPrefs.getBoolean("enable_download_subtitle", false)
-        }
+    @SuppressLint("InlinedApi")
+    private fun showFormatChoiceDialog(activity: Activity) {
+        val appDialogTheme = getResId("AppTheme.Dialog.Alert", "style")
+        AlertDialog.Builder(activity, appDialogTheme)
+            .setTitle("格式选择")
+            .setItems(arrayOf("json", "srt")) { _, which ->
+                if (windowAlertPermissionGranted())
+                    preventFinish = true
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+                    putExtra(
+                        DocumentsContract.EXTRA_INITIAL_URI,
+                        Uri.parse("content://com.android.externalstorage.documents/document/primary:Download")
+                    )
+                }
+                activity.startActivityForResult(intent, if (which == 0) reqCodeJson else reqCodeSrt)
+            }
+            .create().apply {
+                setOnShowListener {
+                    window?.let { w ->
+                        @Suppress("DEPRECATION")
+                        val screenWidth = w.windowManager.defaultDisplay.width
+                        w.attributes = w.attributes.also {
+                            it.width = (screenWidth * 0.5).toInt()
+                        }
+                    }
+                }
+            }
+            .show()
+    }
 
+    companion object {
         private const val reqCodeJson = 6666
         private const val reqCodeSrt = 8888
-        private var preventFinish = false
         private const val settingsItemId = "menu_settings" // pgc/bangumi
         private const val settingsItemId2 = "PLAY_SETTING" // ugc/video
         private const val subDownloadItemId = "menu_download_subtitles"
         private val downloadIconResId by lazy { getResId("bangumi_sheet_ic_downloads", "drawable") }
-
-        @SuppressLint("InlinedApi")
-        private fun showFormatChoiceDialog(activity: Activity) {
-            val appDialogTheme = getResId("AppTheme.Dialog.Alert", "style")
-            AlertDialog.Builder(activity, appDialogTheme)
-                .setTitle("格式选择")
-                .setItems(arrayOf("json", "srt")) { _, which ->
-                    if (windowAlertPermissionGranted())
-                        preventFinish = true
-                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
-                        putExtra(
-                            DocumentsContract.EXTRA_INITIAL_URI,
-                            Uri.parse("content://com.android.externalstorage.documents/document/primary:Download")
-                        )
-                    }
-                    activity.startActivityForResult(
-                        intent,
-                        if (which == 0) reqCodeJson else reqCodeSrt
-                    )
-                }
-                .create().apply {
-                    setOnShowListener {
-                        window?.let { w ->
-                            @Suppress("DEPRECATION")
-                            val screenWidth = w.windowManager.defaultDisplay.width
-                            w.attributes = w.attributes.also {
-                                it.width = (screenWidth * 0.5).toInt()
-                            }
-                        }
-                    }
-                }
-                .show()
-        }
     }
 }
