@@ -107,7 +107,6 @@ class XposedInit : IXposedHookLoadPackage, IXposedHookZygoteInit {
                     startHook(CopyHook(lpparam.classLoader))
                     startHook(LiveRoomHook(lpparam.classLoader))
                     startHook(QualityHook(lpparam.classLoader))
-                    startHook(VideoSubtitleHook(lpparam.classLoader))
                     startHook(DarkSwitchHook(lpparam.classLoader))
                     startHook(SubtitleDownloadHook(lpparam.classLoader))
                     startHook(OkHttpHook(lpparam.classLoader))
