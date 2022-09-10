@@ -56,7 +56,7 @@ class AppUpgradeHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     replaceMethod(it, File::class.java, String::class.java) { null }
                 }
             }
-            instance.realCallClass?.hookBeforeMethod(instance.executeCall()) { param ->
+            instance.realCallClass?.hookBeforeMethod(instance.execute()) { param ->
                 val requestField = instance.realCallRequestField() ?: return@hookBeforeMethod
                 val urlField = instance.urlField() ?: return@hookBeforeMethod
                 val request = param.thisObject.getObjectField(requestField)
@@ -67,17 +67,17 @@ class AppUpgradeHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         ?: return@hookBeforeMethod
                     val mediaType = instance.mediaTypeClass
                         ?.callStaticMethod(
-                            instance.getMediaType(),
+                            instance.get(),
                             "application/json; charset=UTF-8"
                         ) ?: return@hookBeforeMethod
                     val content = runCatchingOrNull { checkUpgrade(url) } ?: noUpdateResponse
                     val responseBody = instance.responseBodyClass
                         ?.callStaticMethod(
-                            instance.createResponseBody(),
+                            instance.create(),
                             mediaType,
                             content
                         ) ?: return@hookBeforeMethod
-                    val responseBuildFields = instance.responseBuildFields()
+                    val responseBuildFields = instance.responseBuilderFields()
                         .takeIf { it.isNotEmpty() } ?: return@hookBeforeMethod
                     instance.responseBuilderClass?.new()
                         ?.setObjectField(responseBuildFields[0], request)
