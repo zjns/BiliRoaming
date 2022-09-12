@@ -268,6 +268,8 @@ object SubtitleHelper {
     private const val furrySubInfoS2 =
         "「字幕由 富睿字幕组 搬运」\n（禁止在B站宣传漫游相关内容，否则拉黑）\n（禁止在泰区评论，禁止在B站任何地方讨论泰区相关内容）"
     private val mineSubInfo by lazy { moduleRes.getString(R.string.subtitle_append_info) }
+    private val noInfoRegex =
+        Regex("""(\n)?$furrySubInfoT(\n)?|(\n)?$furrySubInfoS2(\n)?|(\n)?$furrySubInfoS(\n)?""")
 
     fun JSONArray.removeSubAppendedInfo() = apply {
         var maybeHasSame = false
@@ -281,14 +283,7 @@ object SubtitleHelper {
                     || content.contains(furrySubInfoS2)
                 ) {
                     maybeHasSame = true
-                    val newContent = content
-                        .replace("\n$furrySubInfoT", "")
-                        .replace("$furrySubInfoT\n", "")
-                        .replace("\n$furrySubInfoS2", "")
-                        .replace("$furrySubInfoS2\n", "")
-                        .replace("\n$furrySubInfoS", "")
-                        .replace("$furrySubInfoS\n", "")
-                    it.put("content", newContent)
+                    it.put("content", content.replace(noInfoRegex, ""))
                 }
             }
         }
