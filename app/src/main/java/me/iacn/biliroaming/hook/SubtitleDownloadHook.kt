@@ -46,7 +46,6 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         }
 
         val onActivityResultHook = fun(param: MethodHookParam, video: Boolean) {
-            val thiz = param.thisObject as Activity
             val requestCode = param.args[0] as Int
             val resultCode = param.args[1] as Int
             val data = (param.args[2] as Intent?)?.data
@@ -64,7 +63,8 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             else
                 "application/octet-stream"
             SubtitleHelper.executor.execute {
-                val titleDirDoc = DocumentFile.fromTreeUri(thiz, data)
+                val context = currentContext
+                val titleDirDoc = DocumentFile.fromTreeUri(context, data)
                     ?.findOrCreateDir(titleDir) ?: return@execute
                 currentSubtitles.forEach { item ->
                     val lan = item.lan
@@ -76,16 +76,16 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         .run { if (!video) findOrCreateDir(epTitleDir ?: "") else this }
                         ?.findOrCreateFile(mimeType, fileName)
                         ?: return@forEach
-                    thiz.contentResolver.openOutputStream(subFileDoc.uri, "wt")?.use { os ->
+                    context.contentResolver.openOutputStream(subFileDoc.uri, "wt")?.use { os ->
                         runCatching {
                             var text = URL(url).readText()
                             if (url.contains("zh_converter=t2cn"))
                                 text = SubtitleHelper.convert(text)
                             val json = JSONObject(text)
                             val body = json.getJSONArray("body")
-                                .removeSubAppendedInfo().reSort()
-                            json.put("body", body)
+                                .removeSubAppendedInfo()
                             if (exportJson) {
+                                json.put("body", body.reSort())
                                 val prettyJson = json.toString(2)
                                 os.write(prettyJson.toByteArray())
                             } else {
