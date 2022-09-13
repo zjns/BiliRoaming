@@ -160,6 +160,11 @@
             android:summary="@string/force_browser_summary"
             android:title="@string/force_browser_title" />
 
+        <Preference
+            android:key="text_fold"
+            android:summary="@string/text_fold_summary"
+            android:title="@string/text_fold_title" />
+
         <SwitchPreference
             android:dependency="main_func"
             android:key="enable_download_subtitle"
