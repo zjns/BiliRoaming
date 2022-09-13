@@ -91,6 +91,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             findPreference("custom_link")?.onPreferenceClickListener = this
             findPreference("add_custom_button")?.onPreferenceClickListener = this
             findPreference("skin")?.onPreferenceClickListener = this
+            findPreference("text_fold")?.onPreferenceClickListener = this
             findPreference("customize_dynamic")?.onPreferenceClickListener = this
             checkCompatibleVersion()
             checkUpdate()
@@ -685,6 +686,11 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             return true
         }
 
+        private fun onTextFoldClick(): Boolean {
+            TextFoldDialog(activity, prefs).show()
+            return true
+        }
+
         private fun onCustomDynamicClick(): Boolean {
             DynamicFilterDialog(activity, prefs).create().also { dialog ->
                 dialog.setOnShowListener {
@@ -715,6 +721,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             "custom_link" -> onCustomLinkClick()
             "add_custom_button" -> onAddCustomButtonClick()
             "skin" -> onSkinClick((preference as SwitchPreference).isChecked)
+            "text_fold" -> onTextFoldClick()
             "customize_dynamic" -> onCustomDynamicClick()
             else -> false
         }
