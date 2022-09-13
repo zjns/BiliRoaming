@@ -317,6 +317,7 @@ message HookInfo {
   optional DarkSwitch dark_switch = 501;
   optional ToolbarService toolbar_service = 502;
   optional Okio2 okio2 = 503;
+  optional Method set_line_to_all_count = 504;
   optional MapIds map_ids = 2;
   int32 client_version_code = 3;
   int32 module_version_code = 4;
