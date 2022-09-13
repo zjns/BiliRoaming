@@ -173,6 +173,12 @@
     <string name="skin_import_from_file">从json文件导入</string>
     <string name="purify_banner_ads_title">净化轮播图广告</string>
     <string name="purify_banner_ads_summary">净化追番、影视等版块轮播图广告</string>
+    <string name="text_fold_title">文本折叠控制</string>
+    <string name="text_fold_summary">支持自定义评论及动态开始折叠的文本行数</string>
+    <string name="text_fold_comment_max_lines_title">评论开始折叠行数</string>
+    <string name="text_fold_dyn_max_lines_title">动态开始折叠行数</string>
+    <string name="text_fold_dyn_lines_to_all_title">动态全文阅读触发行数</string>
+    <string name="text_fold_line">%1$s行</string>
     <string name="replace_story_video_title">替换竖版视频</string>
     <string name="replace_story_video_summary">替换竖版视频为正常视频</string>
     <string name="customize_drawer_title">自定义我的页面</string>
