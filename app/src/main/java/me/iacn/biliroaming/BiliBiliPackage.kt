@@ -111,6 +111,7 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val storyVideoActivityClass by Weak { "com.bilibili.video.story.StoryVideoActivity" from mClassLoader }
     val okioWrapperClass by Weak { mHookInfo.okio.class_ from mClassLoader }
     val ellipsizingTextViewClass by Weak { "com.bilibili.bplus.followingcard.widget.EllipsizingTextView" from mClassLoader }
+    val setLineToAllCountMethod get() = mHookInfo.setLineToAllCount.orNull
     val shareClickResultClass by Weak { "com.bilibili.lib.sharewrapper.online.api.ShareClickResult" from mClassLoader }
     val backgroundPlayerClass by Weak { mHookInfo.musicNotification.backgroundPlayer from mClassLoader }
     val playerServiceClass by Weak { mHookInfo.musicNotification.playerService from mClassLoader }
@@ -638,6 +639,50 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 val toolbarServiceClass = miniPlayMethod.declaringClass
                 class_ = class_ { name = toolbarServiceClass.name }
                 miniPlay = method { name = miniPlayMethod.name }
+            }
+            setLineToAllCount = method {
+                val ellipsizingTextViewClass =
+                    "com.bilibili.bplus.followingcard.widget.EllipsizingTextView"
+                        .from(classloader) ?: return@method
+                name = ellipsizingTextViewClass.declaredMethods
+                    .find { it.name == "setLineToAllCount" }?.name
+                    ?: run {
+                        val setOnClickListenerIndex = dexHelper.encodeMethodIndex(
+                            View::class.java.getMethod(
+                                "setOnClickListener",
+                                View.OnClickListener::class.java
+                            )
+                        )
+                        val ellipsizingTextViewIndex =
+                            dexHelper.encodeClassIndex(ellipsizingTextViewClass)
+                        val viewGroupIndex = dexHelper.encodeClassIndex(ViewGroup::class.java)
+                        val listIndex = dexHelper.encodeClassIndex(List::class.java)
+                        dexHelper.findMethodInvoked(
+                            setOnClickListenerIndex,
+                            -1,
+                            -1,
+                            "LLL",
+                            -1,
+                            longArrayOf(viewGroupIndex, listIndex),
+                            null,
+                            null,
+                            false
+                        ).asSequence().firstNotNullOfOrNull {
+                            dexHelper.findMethodInvoking(
+                                it,
+                                -1,
+                                -1,
+                                "VI",
+                                ellipsizingTextViewIndex,
+                                null,
+                                null,
+                                null,
+                                true
+                            ).asSequence().firstNotNullOfOrNull { idx ->
+                                dexHelper.decodeMethodIndex(idx) as? Method
+                            }
+                        }
+                    }?.name ?: return@method
             }
 
             bangumiApiResponse = class_ {
