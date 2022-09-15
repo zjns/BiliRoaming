@@ -108,6 +108,9 @@ class SubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         }
     }
 
+    private val closeText =
+        currentContext.getString(getResId("Player_option_subtitle_lan_doc_nodisplay", "string"))
+
     private val enableSubDownload by lazy {
         sPrefs.getBoolean("main_func", false)
                 && sPrefs.getBoolean("enable_download_subtitle", false)
@@ -177,7 +180,15 @@ class SubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             }
 
             var thSubtitles = listOf<SubtitleItem>()
+            var closeSubtitle: SubtitleItem? = null
             if (sPrefs.getBoolean("main_func", false)) {
+                if (param.args[0].callMethodAs<String>("getSpmid").contains("pgc")) {
+                    closeSubtitle = subtitleItem {
+                        lan = "nodisplay"
+                        lanDoc = closeText
+                    }
+                    changed = true
+                }
                 val oid = param.args[0].callMethod("getOid").toString()
                 var tryThailand = lastSeasonInfo.containsKey("watch_platform")
                         && lastSeasonInfo["watch_platform"] == "1"
@@ -243,7 +254,8 @@ class SubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     subtitle = subtitle.copy {
                         subtitles.addAll(thSubtitles)
                         cnSubtitle?.let { subtitles.add(it) }
-                        if (enableSubDownload) currentSubtitles = subtitles
+                        if (enableSubDownload) currentSubtitles = subtitles.toList()
+                        closeSubtitle?.let { subtitles.add(it) }
                     }
                 }
                 if (!changed) return@hookAfterMethod
