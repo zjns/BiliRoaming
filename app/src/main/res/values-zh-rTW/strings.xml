@@ -167,7 +167,7 @@
     <string name="skin_summary">重啟後，須等待十幾秒下載資源，然後再重啟</string>
     <string name="skin_import_from_file">從json文件導入</string>
     <string name="purify_banner_ads_title">淨化輪播圖廣告</string>
-    <string name="purify_banner_ads_summary">淨化追番、影視等版塊輪播圖廣告</string>
+    <string name="purify_banner_ads_summary">淨化推薦、追番、影視等版塊輪播圖廣告</string>
     <string name="text_fold_title">文本摺疊控制</string>
     <string name="text_fold_summary">支持自訂評論及動態開始摺疊的文本行數</string>
     <string name="text_fold_comment_max_lines_title">評論開始摺疊行數</string>
