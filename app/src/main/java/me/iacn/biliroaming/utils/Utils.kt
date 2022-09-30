@@ -95,7 +95,7 @@ val packageName: String by lazy { currentContext.packageName }
 val isBuiltIn
     get() = XposedInit.modulePath.endsWith("so")
 
-val isLSPBuiltIn get() = !XposedInit.modulePath.endsWith("apk")
+val isLSPBuiltIn get() = XposedInit.modulePath.contains("lspatch")
 
 val is64
     get() = currentContext.applicationInfo.nativeLibraryDir.contains("64")
