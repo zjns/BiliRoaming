@@ -337,6 +337,9 @@ inline fun <reified T> Class<*>.findFieldByExactType(): Field? =
 fun Class<*>.findFieldByExactType(type: Class<*>): Field? =
     findFirstFieldByExactType(this, type)
 
+fun Class<*>.findFieldByExactTypeOrNull(type: Class<*>): Field? =
+    runCatchingOrNull { findFirstFieldByExactType(this, type) }
+
 @Suppress("UNCHECKED_CAST")
 fun <T> Any.callMethodAs(methodName: String?, vararg args: Any?) =
     callMethod(this, methodName, *args) as T
