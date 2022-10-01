@@ -153,7 +153,8 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val playerFullStoryWidgetClass by Weak { mHookInfo.playerFullStoryWidget.class_ from mClassLoader }
     val okioClass by Weak { mHookInfo.okio2.class_ from mClassLoader }
     val bufferedSourceClass by Weak { mHookInfo.okio2.bufferedSource from mClassLoader }
-    val realCallClass by Weak { mHookInfo.okHttp.realCall.class_ from mClassLoader }
+    val realCallClass by Weak { mHookInfo.okHttp.realCall from mClassLoader }
+    val responseClass by Weak { mHookInfo.okHttp.response.class_ from mClassLoader }
     val responseBodyClass by Weak { mHookInfo.okHttp.responseBody.class_ from mClassLoader }
     val mediaTypeClass by Weak { mHookInfo.okHttp.mediaType.class_ from mClassLoader }
     val biliCallClass by Weak { mHookInfo.biliCall.class_ from mClassLoader }
@@ -277,10 +278,6 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     fun musicPlayerService() = mHookInfo.musicNotification.musicPlayerService.orNull
 
     fun playerFullStoryWidget() = mHookInfo.playerFullStoryWidget.method.orNull
-
-    fun execute() = mHookInfo.okHttp.realCall.execute.orNull
-
-    fun realCallRequestField() = mHookInfo.okHttp.realCall.request.orNull
 
     fun codeField() = mHookInfo.okHttp.response.code.orNull
 
@@ -833,14 +830,7 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                     class_ = class_ { name = getMethod.declaringClass.name }
                     get = method { name = getMethod.name }
                 }
-                realCall = realCall {
-                    class_ = class_ { name = realCallClass.name }
-                    execute = method { name = executeMethod.name }
-                    request = field {
-                        name = realCallClass.findFirstFieldByExactTypeOrNull(requestClass)?.name
-                            ?: return@realCall
-                    }
-                }
+                realCall = class_ { name = executeMethod.declaringClass.name }
             }
             okio2 = okio2 {
                 val okioClass = "okio.Okio".from(classloader)
