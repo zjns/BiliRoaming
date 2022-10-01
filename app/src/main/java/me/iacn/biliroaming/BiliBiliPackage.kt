@@ -148,7 +148,8 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val projectionPlayUrlClass by Weak { "com.bilibili.lib.projection.internal.api.model.ProjectionPlayUrl" from mClassLoader }
     val okioClass by Weak { mHookInfo.okio2.class_ from mClassLoader }
     val bufferedSourceClass by Weak { mHookInfo.okio2.bufferedSource from mClassLoader }
-    val realCallClass by Weak { mHookInfo.okHttp.realCall.class_ from mClassLoader }
+    val realCallClass by Weak { mHookInfo.okHttp.realCall from mClassLoader }
+    val responseClass by Weak { mHookInfo.okHttp.response.class_ from mClassLoader }
     val responseBodyClass by Weak { mHookInfo.okHttp.responseBody.class_ from mClassLoader }
     val mediaTypeClass by Weak { mHookInfo.okHttp.mediaType.class_ from mClassLoader }
     val biliCallClass by Weak { mHookInfo.biliCall.class_ from mClassLoader }
@@ -286,10 +287,6 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     fun musicPlayer() = mHookInfo.musicNotification.musicPlayer.orNull
 
     fun musicPlayerService() = mHookInfo.musicNotification.musicPlayerService.orNull
-
-    fun execute() = mHookInfo.okHttp.realCall.execute.orNull
-
-    fun realCallRequestField() = mHookInfo.okHttp.realCall.request.orNull
 
     fun codeField() = mHookInfo.okHttp.response.code.orNull
 
