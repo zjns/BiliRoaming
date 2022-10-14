@@ -2,6 +2,7 @@ package me.iacn.biliroaming.hook
 
 import me.iacn.biliroaming.BiliBiliPackage.Companion.instance
 import me.iacn.biliroaming.utils.*
+import java.lang.reflect.Proxy
 
 class ProtoBufHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     override fun startHook() {
@@ -12,6 +13,7 @@ class ProtoBufHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         val removeCmdDms = sPrefs.getBoolean("remove_video_cmd_dms", false)
         val purifySearch = sPrefs.getBoolean("purify_search", false)
         val purifyCampus = sPrefs.getBoolean("purify_campus", false)
+        val removeCommentCm = sPrefs.getBoolean("remove_comment_cm", false)
         val blockWordSearch = sPrefs.getBoolean("block_word_search", false)
         val blockModules = sPrefs.getBoolean("block_modules", false)
         val blockUpperRecommendAd = sPrefs.getBoolean("block_upper_recommend_ad", false)
@@ -98,6 +100,31 @@ class ProtoBufHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 "com.bapis.bilibili.app.interfaces.v1.DefaultWordsReq"
             ) { param ->
                 param.result = null
+            }
+        }
+        if (hidden && removeCommentCm) {
+            "com.bapis.bilibili.main.community.reply.v1.ReplyMoss".hookBeforeMethod(
+                mClassLoader,
+                "mainList",
+                "com.bapis.bilibili.main.community.reply.v1.MainListReq",
+                instance.mossResponseHandlerClass
+            ) { param ->
+                val handler = param.args[1]
+                param.args[1] = Proxy.newProxyInstance(
+                    handler.javaClass.classLoader,
+                    arrayOf(instance.mossResponseHandlerClass)
+                ) { _, m, args ->
+                    if (m.name == "onNext") {
+                        val reply = args[0]
+                        reply?.callMethod("getCm")
+                            ?.callMethod("clearSourceContent")
+                        m(handler, *args)
+                    } else if (args == null) {
+                        m(handler)
+                    } else {
+                        m(handler, *args)
+                    }
+                }
             }
         }
         if (hidden && blockWordSearch) {
