@@ -143,6 +143,9 @@
     <string name="text_fold_dyn_max_lines_title">動態開始摺疊行數</string>
     <string name="text_fold_dyn_lines_to_all_title">動態全文閱讀觸發行數</string>
     <string name="text_fold_line">%1$s行</string>
+    <string name="misc_remove_ads_title">去廣告雜項</string>
+    <string name="remove_search_ads_title">移除搜尋推廣</string>
+    <string name="remove_comment_cm_title">移除評論頁頂部推廣橫條</string>
     <string name="replace_story_video_title">取代豎版影片</string>
     <string name="replace_story_video_summary">取代豎版影片為正常影片</string>
     <string name="customize_drawer_title">自訂我的頁面</string>
