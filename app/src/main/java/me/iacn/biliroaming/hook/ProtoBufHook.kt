@@ -1,6 +1,8 @@
 package me.iacn.biliroaming.hook
 
+import me.iacn.biliroaming.BiliBiliPackage.Companion.instance
 import me.iacn.biliroaming.utils.*
+import java.lang.reflect.Proxy
 
 class ProtoBufHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     override fun startHook() {
@@ -13,6 +15,7 @@ class ProtoBufHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         val purifySearch = sPrefs.getBoolean("purify_search", false)
         val purifyCampus = sPrefs.getBoolean("purify_campus", false)
         val unlockPlayActions = sPrefs.getBoolean("play_arc_conf", false)
+        val removeCommentCm = sPrefs.getBoolean("remove_comment_cm", false)
         val blockWordSearch = sPrefs.getBoolean("block_word_search", false)
 
         if (hidden && (purifyCity || purifyCampus)) {
@@ -95,6 +98,31 @@ class ProtoBufHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         it?.callMethod("setDisabled", false)
                         it?.callMethod("setIsSupport", true)
                         it?.callMethod("clearExtraContent")
+                    }
+                }
+            }
+        }
+        if (hidden && removeCommentCm) {
+            "com.bapis.bilibili.main.community.reply.v1.ReplyMoss".hookBeforeMethod(
+                mClassLoader,
+                "mainList",
+                "com.bapis.bilibili.main.community.reply.v1.MainListReq",
+                instance.mossResponseHandlerClass
+            ) { param ->
+                val handler = param.args[1]
+                param.args[1] = Proxy.newProxyInstance(
+                    handler.javaClass.classLoader,
+                    arrayOf(instance.mossResponseHandlerClass)
+                ) { _, m, args ->
+                    if (m.name == "onNext") {
+                        val reply = args[0]
+                        reply?.callMethod("getCm")
+                            ?.callMethod("clearSourceContent")
+                        m(handler, *args)
+                    } else if (args == null) {
+                        m(handler)
+                    } else {
+                        m(handler, *args)
                     }
                 }
             }
