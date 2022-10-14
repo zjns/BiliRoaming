@@ -396,6 +396,10 @@
             android:summary="@string/skin_summary"
             android:title="@string/skin_title" />
 
+        <Preference
+            android:key="misc_remove_ads"
+            android:title="@string/misc_remove_ads_title" />
+
         <SwitchPreference
             android:dependency="hidden"
             android:key="purify_banner_ads"
