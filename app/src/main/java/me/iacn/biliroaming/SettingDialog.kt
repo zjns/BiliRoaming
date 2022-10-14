@@ -109,6 +109,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             findPreference("add_custom_button")?.onPreferenceChangeListener = this
             findPreference("skin")?.onPreferenceChangeListener = this
             findPreference("text_fold")?.onPreferenceClickListener = this
+            findPreference("misc_remove_ads")?.onPreferenceClickListener = this
             findPreference("customize_dynamic")?.onPreferenceClickListener = this
             checkCompatibleVersion()
             searchItems = retrieve(preferenceScreen)
@@ -898,6 +899,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             "customize_drawer" -> onCustomizeDrawerClick()
             "custom_link" -> onCustomLinkClick()
             "text_fold" -> onTextFoldClick()
+            "misc_remove_ads" -> run { MiscRemoveAdsDialog(activity, prefs).show(); true }
             "customize_dynamic" -> onCustomDynamicClick()
             "danmaku_filter" -> onDanmakuFilterClick()
             else -> false
