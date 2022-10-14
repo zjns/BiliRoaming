@@ -162,6 +162,7 @@ class BangumiSeasonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
 
     private val navClass by Weak { "com.bapis.bilibili.polymer.app.search.v1.Nav" from mClassLoader }
     private val searchByTypeRespClass by Weak { "com.bapis.bilibili.polymer.app.search.v1.SearchByTypeResponse" from mClassLoader }
+    private val searchMossClass by Weak { "com.bapis.bilibili.polymer.app.search.v1.SearchMoss" from mClassLoader }
 
     @SuppressLint("SetTextI18n")
     override fun startHook() {
@@ -407,26 +408,29 @@ class BangumiSeasonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             }
             pageTypesClass.setStaticObjectField("\$VALUES", newPageArray)
         }
-        if (sPrefs.getBoolean("hidden", false) &&
-            (sPrefs.getBoolean("search_area_bangumi", false)
-                    || sPrefs.getBoolean("search_area_movie", false))
-        ) {
-            val mossResponseHandlerClass = instance.mossResponseHandlerClass ?: return
-            val searchMossClass =
-                "com.bapis.bilibili.polymer.app.search.v1.SearchMoss".from(mClassLoader) ?: return
-            searchMossClass.hookBeforeMethod(
+        val hidden = sPrefs.getBoolean("hidden", false)
+        val searchBangumi = sPrefs.getBoolean("search_area_bangumi", false)
+        val searchMovie = sPrefs.getBoolean("search_area_movie", false)
+        val removeSearchAds = sPrefs.getBoolean("remove_search_ads", false)
+        if (hidden && (searchBangumi || searchMovie || removeSearchAds)) {
+            searchMossClass?.hookBeforeMethod(
                 "searchAll",
                 "com.bapis.bilibili.polymer.app.search.v1.SearchAllRequest",
-                mossResponseHandlerClass
+                instance.mossResponseHandlerClass
             ) { param ->
                 param.args[1] = param.args[1].mossResponseHandlerProxy {
-                    addAreaTagsV2(it)
+                    if (searchBangumi || searchMovie)
+                        addAreaTagsV2(it)
+                    if (removeSearchAds)
+                        removeSearchAds(it)
                 }
             }
-            searchMossClass.hookBeforeMethod(
+        }
+        if (hidden && (searchBangumi || searchMovie)) {
+            searchMossClass?.hookBeforeMethod(
                 "searchByType",
                 "com.bapis.bilibili.polymer.app.search.v1.SearchByTypeRequest",
-                mossResponseHandlerClass
+                instance.mossResponseHandlerClass
             ) { param ->
                 val searchByTypeRespClass = searchByTypeRespClass ?: return@hookBeforeMethod
                 val key =
@@ -452,6 +456,15 @@ class BangumiSeasonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 param.result = null
             }
         }
+    }
+
+    private fun removeSearchAds(v: Any?) = buildSet {
+        v?.callMethodAs<List<Any>?>("getItemList")
+            ?.onEachIndexed { idx, e ->
+                if (e.callMethodAs("hasCm")) add(idx)
+            }
+    }.reversed().forEach {
+        v?.callMethod("removeItem", it)
     }
 
     private fun addAreaTagsV2(v: Any?) {
