@@ -104,6 +104,7 @@ class Dictionary(
 @Suppress("UNUSED")
 object SubtitleHelper {
     private val dictFile by lazy { File(currentContext.filesDir, "t2cn.txt") }
+    private val tmpDictFile by lazy { File(currentContext.filesDir, "t2cn.txt.tmp") }
     private val dictionary by lazy { Dictionary.loadDictionary(dictFile) }
     private const val dictUrl =
         "https://archive.biliimg.com/bfs/archive/566adec17e127bf92aed21832db0206ccecc8caa.png"
@@ -141,41 +142,45 @@ object SubtitleHelper {
         return false
     }
 
-    fun checkDictUpdate(): String? {
+    fun checkDictUpdate(): Boolean {
         val lastCheckTime = sCaches.getLong("subtitle_dict_last_check_time", 0)
         if (System.currentTimeMillis() - lastCheckTime < checkInterval && dictExist)
-            return null
+            return false
         sCaches.edit().putLong("subtitle_dict_last_check_time", System.currentTimeMillis()).apply()
         val url = moduleRes.getString(R.string.subtitle_dict_latest_url)
-        val json = runCatchingOrNull {
+        val json = runCatching {
             JSONObject(URL(url).readText())
-        } ?: return null
+        }.onFailure { Log.e(it) }.getOrNull()
+            ?: return if (!dictExist) downloadDict() else false
         val tagName = json.optString("tag_name")
         val latestVer = sCaches.getString("subtitle_dict_latest_version", null) ?: ""
         if (latestVer != tagName || !dictExist) {
             val sha256sum = json.optString("body")
-                .takeUnless { it.isNullOrEmpty() } ?: return null
+                .takeUnless { it.isNullOrEmpty() } ?: return false
             var dictUrl = json.optJSONArray("assets")
                 ?.optJSONObject(0)?.optString("browser_download_url")
-                .takeUnless { it.isNullOrEmpty() } ?: return null
+                .takeUnless { it.isNullOrEmpty() } ?: return false
             dictUrl = "https://ghproxy.com/$dictUrl"
             runCatching {
-                dictFile.outputStream().use { o ->
+                tmpDictFile.outputStream().use { o ->
                     GZIPInputStream(URL(dictUrl).openStream())
                         .use { it.copyTo(o) }
                 }
             }.onSuccess {
-                if (dictFile.sha256sum == sha256sum) {
+                if (tmpDictFile.sha256sum == sha256sum
+                    && (dictFile.takeIf { it.exists() }?.delete() != false)
+                    && tmpDictFile.renameTo(dictFile)
+                ) {
                     sCaches.edit().putString("subtitle_dict_latest_version", tagName).apply()
-                    return dictFile.path
+                    return true
                 }
-                dictFile.delete()
+                tmpDictFile.delete()
             }.onFailure {
                 Log.e(it)
-                dictFile.delete()
+                tmpDictFile.delete()
             }
         }
-        return null
+        return if (!dictExist) downloadDict() else false
     }
 
     fun reloadDict() {
@@ -263,8 +268,10 @@ object SubtitleHelper {
         } else apply { put(info) }
     }
 
-    private const val furrySubInfoT = "「字幕由 富睿字幕組 搬運」\n（禁止在B站宣傳漫遊相關内容，否則拉黑）"
-    private const val furrySubInfoS = "「字幕由 富睿字幕组 搬运」\n（禁止在B站宣传漫游相关内容，否则拉黑）"
+    private const val furrySubInfoT =
+        "「字幕由 富睿字幕組 搬運」\n（禁止在B站宣傳漫遊相關内容，否則拉黑）"
+    private const val furrySubInfoS =
+        "「字幕由 富睿字幕组 搬运」\n（禁止在B站宣传漫游相关内容，否则拉黑）"
     private const val furrySubInfoS2 =
         "「字幕由 富睿字幕组 搬运」\n（禁止在B站宣传漫游相关内容，否则拉黑）\n（禁止在泰区评论，禁止在B站任何地方讨论泰区相关内容）"
     private val mineSubInfo by lazy { moduleRes.getString(R.string.subtitle_append_info) }
