@@ -402,7 +402,7 @@ class SubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         SubtitleHelper.executor.submit(Callable {
                             SubtitleHelper.checkDictUpdate()
                         }).get(60, TimeUnit.SECONDS)
-                    } != null || SubtitleHelper.dictExist
+                    } == true || SubtitleHelper.dictExist
                 } else true
                 val converted = if (dictReady) {
                     runCatching {
@@ -416,7 +416,7 @@ class SubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
 
                 runCatchingOrNull {
                     SubtitleHelper.executor.execute {
-                        SubtitleHelper.checkDictUpdate()?.let {
+                        SubtitleHelper.checkDictUpdate().yes {
                             SubtitleHelper.reloadDict()
                         }
                     }
