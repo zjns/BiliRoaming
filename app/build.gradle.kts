@@ -245,7 +245,7 @@ androidComponents.onVariants { variant ->
     updateArtifact.configure {
         this.transformationRequest.set(transformationRequest)
         transformer.set { builtArtifact ->
-            File(projectDir, "${variant.name}/BiliRoamingX_${builtArtifact.versionName}.apk")
+            File(projectDir, "${variant.name}/BiliRoamingX-v${builtArtifact.versionName}.apk")
         }
     }
 }
