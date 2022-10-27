@@ -430,7 +430,8 @@ jobs:
           files: ${{ env.MODULE_APK }}
 
       - name: Release module apk (CI)
-        if: needs.check.outputs.new_my != '1'
+        #if: needs.check.outputs.new_my != '1'
+        if: ${{ 'A' == 'B' }}
         uses: softprops/action-gh-release@v1
         with:
           token: ${{ secrets.HUB_TOKEN }}
