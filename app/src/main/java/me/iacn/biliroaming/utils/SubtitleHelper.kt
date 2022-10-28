@@ -372,7 +372,7 @@ object SubtitleHelper {
             val to = o.optDouble("to")
             result.appendLine(lineCount++)
             result.appendLine(timeFormat(from) + " --> " + timeFormat(to))
-            result.appendLine(content)
+            result.appendLine(content.trim())
             result.appendLine()
         }
         return result.toString()
