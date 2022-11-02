@@ -114,7 +114,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             findPreference("customize_dynamic")?.onPreferenceClickListener = this
             checkCompatibleVersion()
             searchItems = retrieve(preferenceScreen)
-            checkUpdate()
+            if (!isLSPBuiltIn) checkUpdate()
         }
 
         @Deprecated("Deprecated in Java")
@@ -404,10 +404,8 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                         SPLASH_SELECTION ->
                             File(currentContext.filesDir, SplashHook.SPLASH_IMAGE)
 
-
                         LOGO_SELECTION ->
                             File(currentContext.filesDir, SplashHook.LOGO_IMAGE)
-
 
                         else -> null
                     } ?: return
@@ -423,7 +421,6 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                     val dest = FileOutputStream(destFile)
                     stream.writeTo(dest)
                 }
-
 
                 PREF_EXPORT, PREF_IMPORT -> {
                     val file = File(currentContext.filesDir, "../shared_prefs/biliroaming.xml")
@@ -441,7 +438,6 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                             }
                             Log.toast("请至少重新打开哔哩漫游设置", true)
                         }
-
 
                         PREF_EXPORT -> {
                             try {
