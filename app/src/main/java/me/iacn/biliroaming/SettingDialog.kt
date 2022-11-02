@@ -99,7 +99,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             findPreference("misc_remove_ads")?.onPreferenceClickListener = this
             findPreference("customize_dynamic")?.onPreferenceClickListener = this
             checkCompatibleVersion()
-            checkUpdate()
+            if (!isLSPBuiltIn) checkUpdate()
         }
 
         @Deprecated("Deprecated in Java")
