@@ -320,13 +320,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9.x'
+          python-version: '3.x'
 
       - name: Prepare Python packages
         run: |
           pip install -U pip
           pip install -U wheel
-          pip install pyrogram==2.0.41 tgcrypto==1.2.3
+          pip install pyrogram==2.0.59 tgcrypto==1.2.4
           pip install -U urllib3
 
       - name: Download release artifact
@@ -380,7 +380,7 @@ jobs:
           echo "build_time=$build_time" >> $GITHUB_OUTPUT
 
       - name: Release patched-builtin apk
-        uses: softprops/action-gh-release@v1
+        uses: zjns/action-gh-release@v2
         with:
           token: ${{ secrets.HUB_TOKEN }}
           tag_name: ${{ format('bili-v{0}-b{1}-m{2}', env.VER_NAME, needs.check.outputs.sn, env.M_VER_CODE) }}
@@ -418,7 +418,7 @@ jobs:
 
       - name: Release module apk
         if: needs.check.outputs.new_my == '1'
-        uses: softprops/action-gh-release@v1
+        uses: zjns/action-gh-release@v2
         with:
           token: ${{ secrets.HUB_TOKEN }}
           tag_name: ${{ format('v{0}', env.M_VER_NAME) }}
@@ -432,7 +432,7 @@ jobs:
       - name: Release module apk (CI)
         #if: needs.check.outputs.new_my != '1'
         if: ${{ 'A' == 'B' }}
-        uses: softprops/action-gh-release@v1
+        uses: zjns/action-gh-release@v2
         with:
           token: ${{ secrets.HUB_TOKEN }}
           tag_name: ${{ format('v{0}', env.M_VER_NAME) }}
@@ -474,7 +474,7 @@ jobs:
               changelog = "${{ needs.check.outputs.changelog }}"
               cycle = "${{ needs.check.outputs.cycle }}"
               msg_p1 = "#Bilibili #BiliRoaming"
-              msg_p2 = f"发现新版本哔哩哔哩！\n\n更新日志：\n```{changelog}```"
+              msg_p2 = f"发现新版本哔哩哔哩！\n\n更新日志：\n<pre>{changelog}</pre>"
               msg_p3 = inspect.cleandoc("""
               文件说明：
               - 以<b>official</b>结尾的为官方原版
