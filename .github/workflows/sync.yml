@@ -11,11 +11,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup python
-        uses: actions/setup-python@v2
+      - name: Set up python
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-      - name: Prepare python packages
+
+      - name: Prepare Python packages
         run: |
           pip install -U wheel
           pip install -U pyrogram tgcrypto
@@ -65,7 +66,7 @@ jobs:
               text = f"🎉 Fork sync success!\nRepo: [{repo}]({repo_url})" if (success) else f"😿 Fork sync failed!\nRepo: [{repo}]({repo_url})"
               if success:
                 commits = "\n".join([f"∙ {commit}" for commit in diff_commits[:10]])
-                text += f"\n\nSynced commits:\n```{commits}```"
+                text += f"\n\nSynced commits:\n<pre>{commits}</pre>"
               await bot.send_message(chat_id=channel_id, text=text, disable_web_page_preview=True)
           async def wait():
             try:
