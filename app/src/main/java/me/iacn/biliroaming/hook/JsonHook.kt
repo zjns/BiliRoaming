@@ -498,6 +498,15 @@ class JsonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             ) { (vipEntranceViewField?.get(it.thisObject) as? View)?.visibility = View.GONE }
         }
 
+        if (sPrefs.getBoolean("remove_live_shopping_ads", false)) {
+            "com.bilibili.bililive.room.biz.shopping.beans.LiveGoodsCardDetail".from(mClassLoader)
+                ?.hookBeforeMethod("dataInValid") { param ->
+                    Thread.currentThread().stackTrace.any {
+                        it.className == "com.bilibili.bililive.room.biz.shopping.view.LiveRoomShoppingView"
+                    }.takeIf { it }?.run { param.result = true }
+                }
+        }
+
         val searchRankClass = "com.bilibili.search.api.SearchRank".findClass(mClassLoader)
         val searchGuessClass =
             "com.bilibili.search.api.SearchReferral\$Guess".findClass(mClassLoader)
