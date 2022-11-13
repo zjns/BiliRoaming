@@ -132,6 +132,9 @@
     <string name="force_th_comment_summary">強制開啟串台的泰區評論彈幕（僅除錯使用）</string>
     <string name="share_log_title">分享日誌</string>
     <string name="share_log_summary">可能在舊版無效</string>
+    <string name="subtitle_feedback_title">字幕轉換錯誤回饋</string>
+    <string name="pref_description_title">說明</string>
+    <string name="pref_description_summary">本模組與原版保持同步更新，並額外添加以下功能：\n1. 我的頁面夜間模式切換添加防誤觸彈框\n2. 添加字幕下載功能\n3. 添加動態及評論文本摺疊控制\n更多不值一提的小功能待你發現！\n內建使用可在應用內收到新的內建版更新！</string>
     <string name="enable_download_subtitle_title">啟用番劇字幕下載功能</string>
     <string name="enable_download_subtitle_summary">需開啟解鎖番劇限制選項，此功能才會生效。功能入口：播放詳情頁右上角三點 -> 字幕下載。字幕載入完成後入口才能顯示。</string>
     <string name="skin_title">導入自製主題</string>
