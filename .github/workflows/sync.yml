@@ -29,6 +29,7 @@ jobs:
         uses: zjns/repo-sync@master
         with:
           token: ${{ secrets.HUB_TOKEN }}
+          up_repo: 'yujincheng08/BiliRoaming'
           up_branch: master
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg_passphrase: ${{ secrets.GPG_PASSPHRASE }}
