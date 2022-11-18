@@ -43,11 +43,10 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         var mossMethod = ""
         val stackTrace = Thread.currentThread().stackTrace
         stackTrace.forEachIndexed { index, element ->
-            if (element.methodName == "blockingUnaryCall") {
+            if (element.methodName.startsWith("blockingUnaryCall")) {
                 stackTrace.getOrNull(index + 1)?.let {
                     mossMethod = "${it.className}#${it.methodName}"
                 }
-                return@forEachIndexed
             }
         }
         Log.d("call blocking moss method $mossMethod")
@@ -59,17 +58,16 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         var mossMethod = ""
         val stackTrace = Thread.currentThread().stackTrace
         stackTrace.forEachIndexed { index, element ->
-            if (element.methodName == "asyncUnaryCall") {
+            if (element.methodName.startsWith("asyncUnaryCall")) {
                 stackTrace.getOrNull(index + 1)?.let {
                     mossMethod = "${it.className}#${it.methodName}"
                 }
-                return@forEachIndexed
             }
         }
-        val handler = param.args.last()
+        val handler = param.args[2]
         Log.d("call async moss method $mossMethod, handler type: ${handler.javaClass.name}")
         Log.d("async moss method $mossMethod req:\n${param.args[1]}")
-        param.args[param.args.lastIndex] = Proxy.newProxyInstance(
+        param.args[2] = Proxy.newProxyInstance(
             handler.javaClass.classLoader,
             //handler.javaClass.interfaces
             arrayOf("com.bilibili.lib.moss.api.MossResponseHandler".on(mClassLoader))
@@ -115,21 +113,10 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     }
 
     override fun startHook() {
-        "com.bilibili.lib.moss.api.MossService".hookAfterMethod(
-            mClassLoader,
-            "blockingUnaryCall",
-            "io.grpc.MethodDescriptor",
-            "com.google.protobuf.GeneratedMessageLite",
-            hooker = blockingMossLogHooker
-        )
-        "com.bilibili.lib.moss.api.MossService".hookBeforeMethod(
-            mClassLoader,
-            "asyncUnaryCall",
-            "io.grpc.MethodDescriptor",
-            "com.google.protobuf.GeneratedMessageLite",
-            "com.bilibili.lib.moss.api.MossResponseHandler",
-            hooker = asyncMossLogHooker
-        )
+        "com.bilibili.lib.moss.api.MossService".from(mClassLoader)?.declaredMethods?.run {
+            find { it.name == "asyncUnaryCall" }?.hookBeforeMethod(asyncMossLogHooker)
+            find { it.name == "blockingUnaryCall" }?.hookAfterMethod(blockingMossLogHooker)
+        }
 
         "com.google.protobuf.MessageLiteToString".hookBeforeMethod(
             mClassLoader,
