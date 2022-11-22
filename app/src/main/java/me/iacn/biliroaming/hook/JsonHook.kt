@@ -49,7 +49,6 @@ class JsonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             "tv.danmaku.bili.ui.offline.api.OgvApiResponse".findClassOrNull(mClassLoader)
         val dmAdvertClass =
             "com.bilibili.ad.adview.videodetail.danmakuv2.model.DmAdvert".from(mClassLoader)
-        val liveShoppingInfoClass = "com.bilibili.bililive.room.biz.shopping.beans.LiveShoppingInfo" from mClassLoader
 
         instance.fastJsonClass?.hookAfterMethod(
             instance.fastJsonParse(),
@@ -545,22 +544,15 @@ class JsonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             }
         }
 
-        instance.fastJsonClass?.hookAfterMethod(
-            instance.fastJsonParse(),
-            String::class.java,
-            Type::class.java,
-            "com.alibaba.fastjson.parser.Feature[]"
-        ) { param ->
-            var result = param.result ?: return@hookAfterMethod
-            if (result.javaClass == instance.generalResponseClass) {
-                result = result.getObjectField("data") ?: return@hookAfterMethod
-            }
-
-            when (result.javaClass) {
-                liveShoppingInfoClass -> if (sPrefs.getBoolean("hidden", false)
-                    && sPrefs.getBoolean("remove_live_shopping_ads", false)
-                ) result.setObjectField("shoppingCardDetail", null)
-            }
+        if (sPrefs.getBoolean("hidden", false)
+            && sPrefs.getBoolean("remove_live_shopping_ads", false)
+        ) {
+            "com.bilibili.bililive.room.biz.shopping.beans.LiveGoodsCardDetail".from(mClassLoader)
+                ?.hookBeforeMethod("dataInValid") { param ->
+                    if (Thread.currentThread().stackTrace.any {
+                            it.className.endsWith("LiveRoomShoppingView")
+                        }) param.result = true
+                }
         }
     }
 
