@@ -131,7 +131,7 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val checkMethod get() = mHookInfo.appUpgrade.check.orNull
     val upgradeInfoClass by Weak { mHookInfo.appUpgrade.upgradeInfo from mClassLoader }
     val versionExceptionClass by Weak { mHookInfo.appUpgrade.versionException from mClassLoader }
-    val userFragmentClass by Weak { mHookInfo.darkSwitch.userFragment from mClassLoader }
+    val userFragmentClass by Weak { "tv.danmaku.bili.ui.main2.mine.HomeUserCenterFragment" from mClassLoader }
     val themeUtilsClass by Weak { mHookInfo.darkSwitch.themeUtils from mClassLoader }
     val switchDarkModeMethod get() = mHookInfo.darkSwitch.switchDarkMode.orNull
     val isDarkFollowSystemMethod get() = mHookInfo.darkSwitch.isDarkFollowSystem.orNull
@@ -589,6 +589,7 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 versionException = class_ { name = versionExceptionClass.name }
             }
             darkSwitch = darkSwitch {
+                if (platform == "android_hd") return@darkSwitch
                 val userFragmentClass = "tv.danmaku.bili.ui.main2.mine.HomeUserCenterFragment"
                     .from(classloader) ?: dexHelper.findMethodUsingString(
                     "key_global_link_entrance_shown",
