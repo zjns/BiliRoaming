@@ -5,10 +5,7 @@ import android.app.AlertDialog
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.TypedValue
-import android.widget.FrameLayout
-import android.widget.LinearLayout
-import android.widget.SeekBar
-import android.widget.TextView
+import android.widget.*
 import me.iacn.biliroaming.hook.TextFoldHook
 import me.iacn.biliroaming.utils.sPrefs
 import kotlin.math.roundToInt
@@ -16,6 +13,9 @@ import kotlin.math.roundToInt
 class TextFoldDialog(val activity: Activity, prefs: SharedPreferences) :
     AlertDialog.Builder(activity) {
     init {
+        val scrollView = ScrollView(context).apply {
+            scrollBarStyle = ScrollView.SCROLLBARS_OUTSIDE_OVERLAY
+        }
         val root = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = FrameLayout.LayoutParams(
@@ -23,6 +23,7 @@ class TextFoldDialog(val activity: Activity, prefs: SharedPreferences) :
                 FrameLayout.LayoutParams.WRAP_CONTENT
             )
         }
+        scrollView.addView(root)
 
         val commentMaxLines =
             prefs.getInt("text_fold_comment_max_lines", TextFoldHook.DEF_COMMENT_MAX_LINES)
@@ -71,7 +72,7 @@ class TextFoldDialog(val activity: Activity, prefs: SharedPreferences) :
 
         root.setPadding(16.dp, 10.dp, 16.dp, 10.dp)
 
-        setView(root)
+        setView(scrollView)
     }
 
     private val Int.dp
