@@ -151,19 +151,26 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             superMenuClass.findFieldByExactType(menuItemClickListenerClass) ?: return
         val menuItemImplClass = "com.bilibili.app.comm.supermenu.core.MenuItemImpl"
             .from(mClassLoader) ?: return
-        superMenuClass.hookBeforeMethod("show") { param ->
+        val showMethod = superMenuClass.declaredMethods.run {
+            find { it.name == "show" } ?: lastOrNull()?.takeIf {
+                it.returnType == Void.TYPE && it.parameterTypes.isEmpty() && it.isPublic
+            }
+        } ?: return
+        showMethod.hookBeforeMethod { param ->
             if (currentSubtitles.isEmpty())
                 return@hookBeforeMethod
             val thiz = param.thisObject
             val activityRef =
-                thiz.getFirstFieldByExactTypeAs<WeakReference<Activity>>(WeakReference::class.java)
-            val activity = activityRef?.get() ?: return@hookBeforeMethod
+                thiz.getFirstFieldByExactTypeOrNullAs<WeakReference<Activity>>(WeakReference::class.java)
+            val activity = activityRef?.get() ?: thiz.getFirstFieldByExactTypeOrNull<Activity>()
+            ?: return@hookBeforeMethod
             if (activity.isFinishing || activity.isDestroyed) return@hookBeforeMethod
-            val menu = thiz.callMethodAs<List<*>>("getMenus").last() ?: return@hookBeforeMethod
+            val menu = thiz.getFirstFieldByExactTypeOrNullAs<List<*>>(List::class.java)
+                ?.lastOrNull() ?: return@hookBeforeMethod
             val menuItems = menu.getFirstFieldByExactTypeAs<MutableList<Any>>(List::class.java)
                 ?.also { l ->
                     l.find {
-                        it.callMethodAs<String?>("getItemId")
+                        it.callMethodOrNull("getItemId")
                             .let { id -> id == settingsItemId || id == settingsItemId2 }
                     } ?: return@hookBeforeMethod
                 } ?: return@hookBeforeMethod
@@ -179,7 +186,7 @@ class SubtitleDownloadHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 menuItemClickListener.javaClass.classLoader,
                 arrayOf(menuItemClickListenerClass),
             ) { _, m, args ->
-                if (m.name == "onItemClick" && args[0].callMethod("getItemId") == subDownloadItemId) {
+                if (args.firstOrNull()?.callMethodOrNull("getItemId") == subDownloadItemId) {
                     showFormatChoiceDialog(activity)
                     true
                 } else {
