@@ -550,7 +550,7 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 versionException = class_ { name = versionExceptionClass.name }
             }
             darkSwitch = darkSwitch {
-                if (platform == "android_hd") return@darkSwitch
+                if (platform != "android") return@darkSwitch
                 val userFragmentClass = "tv.danmaku.bili.ui.main2.mine.HomeUserCenterFragment"
                     .from(classloader) ?: dexHelper.findMethodUsingString(
                     "key_global_link_entrance_shown",
