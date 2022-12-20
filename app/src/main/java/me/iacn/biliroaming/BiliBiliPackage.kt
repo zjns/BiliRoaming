@@ -136,6 +136,11 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val isDarkFollowSystemMethod get() = mHookInfo.darkSwitch.isDarkFollowSystem.orNull
     val toolbarServiceClass by Weak { mHookInfo.toolbarService.class_ from mClassLoader }
     val miniPlayMethod get() = mHookInfo.toolbarService.miniPlay.orNull
+    val superMenuClass by Weak { mHookInfo.superMenu.class_ from mClassLoader }
+    val menuItemClickListenerClass by Weak { mHookInfo.superMenu.menuItemClickListener from mClassLoader }
+    val menuItemImplClass by Weak { mHookInfo.superMenu.menuItemImpl from mClassLoader }
+    val showMethod get() = mHookInfo.superMenu.show.orNull
+    val clickListenerField get() = mHookInfo.superMenu.clickListener.orNull
     val biliAccountsClass by Weak { mHookInfo.biliAccounts.class_ from mClassLoader }
     val networkExceptionClass by Weak { "com.bilibili.lib.moss.api.NetworkException" from mClassLoader }
     val brotliInputStreamClass by Weak { mHookInfo.brotliInputStream from mClassLoader }
@@ -674,6 +679,66 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                             }
                         }
                     }?.name ?: return@method
+            }
+            superMenu = superMenu {
+                val mWebActivityClass = "tv.danmaku.bili.ui.webview.MWebActivity".from(classloader)
+                    ?: return@superMenu
+                val mWebActivityIndex = dexHelper.encodeClassIndex(mWebActivityClass)
+                val showMethod = dexHelper.findMethodUsingString(
+                    "open_browser",
+                    false,
+                    -1,
+                    -1,
+                    null,
+                    mWebActivityIndex,
+                    null,
+                    null,
+                    null,
+                    true
+                ).firstOrNull()?.run {
+                    dexHelper.findMethodInvoking(
+                        this,
+                        -1,
+                        0,
+                        "V",
+                        -1,
+                        null,
+                        null,
+                        null,
+                        true
+                    ).firstOrNull()?.let {
+                        dexHelper.decodeMethodIndex(it)
+                    }
+                } ?: return@superMenu
+                val superMenuClass = showMethod.declaringClass
+                val clickListenerField = superMenuClass.declaredFields.find { f ->
+                    f.type.isInterface && f.type.let { c ->
+                        c.declaredMethods.size == 1 && c.declaredMethods[0].let { m ->
+                            m.returnType == Boolean::class.javaPrimitiveType && m.parameterTypes.let {
+                                it.size == 1 && it[0].isInterface
+                            }
+                        }
+                    }
+                } ?: return@superMenu
+                val menuItemImplClass = dexHelper.findMethodUsingString(
+                    "MenuItemImpl{mId='",
+                    false,
+                    -1,
+                    -1,
+                    null,
+                    -1,
+                    null,
+                    null,
+                    null,
+                    true
+                ).firstOrNull()?.let {
+                    dexHelper.decodeMethodIndex(it)
+                }?.declaringClass ?: return@superMenu
+                class_ = class_ { name = showMethod.declaringClass.name }
+                menuItemClickListener = class_ { name = clickListenerField.type.name }
+                menuItemImpl = class_ { name = menuItemImplClass.name }
+                show = method { name = showMethod.name }
+                clickListener = field { name = clickListenerField.name }
             }
 
             bangumiApiResponse = class_ {
