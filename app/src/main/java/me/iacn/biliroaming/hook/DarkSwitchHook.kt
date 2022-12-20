@@ -2,22 +2,21 @@ package me.iacn.biliroaming.hook
 
 import android.app.AlertDialog
 import android.content.Context
-import me.iacn.biliroaming.BiliBiliPackage
+import me.iacn.biliroaming.BiliBiliPackage.Companion.instance
 import me.iacn.biliroaming.utils.*
 
 class DarkSwitchHook(classLoader: ClassLoader) : BaseHook(classLoader) {
 
     override fun startHook() {
-        BiliBiliPackage.instance.userFragmentClass?.run {
-            BiliBiliPackage.instance.switchDarkModeMethod?.let {
+        instance.userFragmentClass?.run {
+            instance.switchDarkModeMethod?.let {
                 hookBeforeMethod(it, Boolean::class.javaPrimitiveType) { param ->
                     val activity = param.thisObject
                         .callMethodOrNullAs<Context>("getActivity")
                         ?: return@hookBeforeMethod
-                    val themeUtils =
-                        BiliBiliPackage.instance.themeUtilsClass ?: return@hookBeforeMethod
+                    val themeUtils = instance.themeUtilsClass ?: return@hookBeforeMethod
                     val isDarkFollowSystem = themeUtils.callStaticMethodOrNullAs<Boolean>(
-                        BiliBiliPackage.instance.isDarkFollowSystemMethod, activity
+                        instance.isDarkFollowSystemMethod, activity
                     ) ?: return@hookBeforeMethod
                     if (isDarkFollowSystem) {
                         AlertDialog.Builder(activity)
