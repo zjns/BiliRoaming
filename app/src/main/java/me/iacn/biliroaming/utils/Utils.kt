@@ -116,9 +116,6 @@ val platform by lazy {
         }
 }
 
-val Any?.isNull get() = this == null
-val Any?.notNull get() = this != null
-
 val logFile by lazy { File(currentContext.externalCacheDir, "log.txt") }
 
 val oldLogFile by lazy { File(currentContext.externalCacheDir, "old_log.txt") }
@@ -304,6 +301,7 @@ fun View.setRippleBackground() = with(TypedValue()) {
     setBackgroundResource(resourceId)
 }
 
+@Suppress("DEPRECATION")
 fun windowAlertPermissionGranted(): Boolean {
     val context = currentContext
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
