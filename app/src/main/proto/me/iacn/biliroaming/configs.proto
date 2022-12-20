@@ -241,6 +241,14 @@ message ToolbarService {
   optional Method mini_play = 2;
 }
 
+message SuperMenu {
+  optional Class class = 1;
+  optional Class menu_item_click_listener = 2;
+  optional Class menu_item_impl = 3;
+  optional Method show = 4;
+  optional Field click_listener = 5;
+}
+
 message PlayerFullStoryWidget {
   optional Class class = 1;
   optional Method method = 2;
@@ -307,6 +315,7 @@ message HookInfo {
   optional ToolbarService toolbar_service = 502;
   optional Okio2 okio2 = 503;
   optional Method set_line_to_all_count = 504;
+  optional SuperMenu super_menu = 505;
   optional MapIds map_ids = 2;
   int32 client_version_code = 3;
   int32 module_version_code = 4;
