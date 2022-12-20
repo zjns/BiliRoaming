@@ -1,5 +1,3 @@
-@file:Suppress("NOTHING_TO_INLINE")
-
 package me.iacn.biliroaming
 
 import android.app.Activity
@@ -16,7 +14,7 @@ import android.widget.Switch
 import android.widget.TextView
 import me.iacn.biliroaming.utils.Log
 import me.iacn.biliroaming.utils.addBackgroundRipple
-import kotlin.math.roundToInt
+import me.iacn.biliroaming.utils.dp
 
 class MiscRemoveAdsDialog(val activity: Activity, prefs: SharedPreferences) :
     AlertDialog.Builder(activity) {
@@ -59,14 +57,7 @@ class MiscRemoveAdsDialog(val activity: Activity, prefs: SharedPreferences) :
         setView(scrollView)
     }
 
-    private val Int.dp
-        inline get() = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            toFloat(),
-            context.resources.displayMetrics
-        ).roundToInt()
-
-    private inline fun string(resId: Int) = context.getString(resId)
+    private fun string(resId: Int) = context.getString(resId)
 
     private fun switchPrefsItem(title: String): Pair<LinearLayout, Switch> {
         val layout = LinearLayout(context).apply {
