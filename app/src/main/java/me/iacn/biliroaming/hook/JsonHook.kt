@@ -157,7 +157,9 @@ class JsonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                             }
                         }
                     } else {
-                        if (sPrefs.getBoolean("modify_vip_section_style", false)) {
+                        if (sPrefs.getBoolean("modify_vip_section_style", false)
+                            && !sPrefs.getBoolean("remove_vip_section", false)
+                        ) {
                             val vipSection = result.getObjectField("vipSectionV2")
                             val vipId = vipSection?.getLongField("id") ?: 0L
                             val vipUrl = vipSection?.getObjectFieldAs("url") ?: ""
@@ -334,7 +336,9 @@ class JsonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             }
         }
 
-        if (sPrefs.getBoolean("modify_vip_section_style", false)) {
+        if (sPrefs.getBoolean("modify_vip_section_style", false)
+            || sPrefs.getBoolean("remove_vip_section", false)
+        ) {
             val vipEntranceViewClass =
                 "tv.danmaku.bili.ui.main2.mine.widgets.MineVipEntranceView".from(mClassLoader)
             val vipEntranceViewField =
@@ -344,7 +348,10 @@ class JsonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 LayoutInflater::class.java,
                 ViewGroup::class.java,
                 Bundle::class.java
-            ) { (vipEntranceViewField?.get(it.thisObject) as? View)?.visibility = View.GONE }
+            ) {
+                (vipEntranceViewField?.get(it.thisObject) as? View)?.visibility = View.GONE
+                vipEntranceViewField?.set(it.thisObject, null)
+            }
         }
 
         val searchRankClass = "com.bilibili.search.api.SearchRank".findClass(mClassLoader)
