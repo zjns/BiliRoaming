@@ -182,6 +182,8 @@
     <string name="remove_comment_cm_title">移除評論頁頂部推廣橫條</string>
     <string name="modify_vip_section_style_title">修改我的大會員樣式</string>
     <string name="modify_vip_section_style_summary">我的頁面將大會員樣式從橫幅修改為正常樣式</string>
+    <string name="remove_vip_section_title">移除我的大會員橫幅</string>
+    <string name="remove_vip_section_summary">我的頁面將大會員橫幅移除</string>
     <string name="replace_story_video_title">取代豎版影片</string>
     <string name="replace_story_video_summary">取代豎版影片為正常影片</string>
     <string name="customize_drawer_title">自訂我的頁面</string>
