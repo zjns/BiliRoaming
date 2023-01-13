@@ -272,14 +272,6 @@ jobs:
           key: ${{ runner.os }}-${{ github.sha }}
           restore-keys: ${{ runner.os }}
 
-      - name: Cache gradle builds
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches/build-cache-*
-          key: gradle-builds-${{ github.sha }}
-          restore-keys: gradle-builds
-
       - name: Generate signing config
         run: |
           key_base64="${{ secrets.SIGNING_KEY }}"
