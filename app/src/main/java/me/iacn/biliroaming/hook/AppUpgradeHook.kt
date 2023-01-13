@@ -47,10 +47,11 @@ class AppUpgradeHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             ).metaData.getInt("BUILD_SN")
             val mVerName = BuildConfig.VERSION_NAME
             val mVerCode = BuildConfig.VERSION_CODE
-            val summary = "当前版本: $verName (release-b$buildSn)\n当前内置漫游版本: $mVerName ($mVerCode)"
+            val summary =
+                "当前版本: $verName (release-b$buildSn)\n当前内置漫游版本: $mVerName ($mVerCode)"
             preference.callMethodOrNull("setSummary", summary)
         }
-        if (platform != "android") return
+        if (platform != "android" || sPrefs.getBoolean("block_update", false)) return
 
         instance.upgradeUtilsClass?.run {
             instance.writeChannelMethod?.let {
@@ -80,13 +81,16 @@ class AppUpgradeHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     )
                     param.result = upgradeInfo
                 }
+
                 -304 -> {
                     instance.upgradeUtilsClass?.callStaticMethodOrNull(
                         instance.cleanApkDirMethod, context, true
                     )
                     param.throwable = instance.versionExceptionClass
-                        ?.new("您当前已经是最新版本了^_^") as Throwable
+                        ?.new("您当前已经是最新版本了^_^") as? Throwable
+                        ?: Exception("您当前已经是最新版本了^_^")
                 }
+
                 else -> {
                     param.throwable = Exception("检查更新失败，请稍后再试/(ㄒoㄒ)/~~")
                 }
