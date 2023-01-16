@@ -4,26 +4,28 @@ import me.iacn.biliroaming.BiliBiliPackage.Companion.instance
 import me.iacn.biliroaming.utils.*
 import java.io.Closeable
 import java.io.EOFException
+import java.io.IOException
 import java.lang.reflect.Proxy
 
 class OkHttpDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
 
     private val gzipSourceClass by Weak { "okio.GzipSource" from mClassLoader }
     private val bufferClass by Weak { "okio.Buffer" from mClassLoader }
-    private val callbackClass by Weak { "okhttp3.Callback" from mClassLoader }
 
     override fun startHook() {
-        instance.realCallClass?.hookAfterMethod("execute") { param ->
+        instance.realCallClass?.hookAfterMethod(instance.execute()) { param ->
             val response = param.result
             logResponse(response, false)
         }
-        instance.realCallClass?.hookBeforeMethod("enqueue", callbackClass) { param ->
+        instance.realCallClass?.hookBeforeMethod(
+            instance.enqueue(), instance.callbackClass
+        ) { param ->
             val callback = param.args[0]
             param.args[0] = Proxy.newProxyInstance(
                 callback.javaClass.classLoader,
-                arrayOf(callbackClass)
+                arrayOf(instance.callbackClass)
             ) { _, m, args ->
-                if (m.name == "onResponse") {
+                if (m.parameterTypes.size == 2 && !IOException::class.java.isAssignableFrom(m.parameterTypes[1])) {
                     val response = args[1]
                     logResponse(response, true)
                 }
@@ -36,22 +38,24 @@ class OkHttpDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         response ?: return
         val gzipSourceClass = gzipSourceClass ?: return
         val bufferClass = bufferClass ?: return
-        val request = response.callMethod("request")
-        val method = request?.callMethod("method")
-        val url = request?.callMethod("url")?.toString()
-        val protocol = response.callMethod("protocol")
+        val request = response.getObjectField(instance.requestField())
+        val method = request?.getObjectField(instance.methodFiled())
+        val url = request?.getObjectField(instance.urlField())?.toString()
+        val protocol = response.getObjectField(instance.protocolField())
         Log.d("############################## ${if (async) "async" else "blocking"}")
         Log.d("--> $method $url $protocol")
-        if (bodyHasUnknownEncoding(response.callMethod("headers"))) {
+        val headers = response.getObjectField(instance.headersField())
+        if (bodyHasUnknownEncoding(headers)) {
             Log.d("<-- END HTTP (encoded body omitted)")
             return
         }
-        val responseBody = response.callMethod("body")
-        val source = responseBody?.callMethod("source")
+        val responseBody = response.getObjectField(instance.bodyField())
+        val source = responseBody?.callMethod(instance.bodySource())
         source?.callMethod("request", Long.MAX_VALUE)
         var buffer = source?.callMethod("buffer") ?: return
         var gzippedLength: Long? = null
-        val contentEncoding = response.callMethod("header", "Content-Encoding")?.toString() ?: ""
+        val contentEncoding = headers?.callMethod(instance.getHeader(), "Content-Encoding")
+            ?.toString() ?: ""
         if ("gzip".equals(contentEncoding, ignoreCase = true)) {
             gzippedLength = buffer.callMethodAs<Long>("size")
             (gzipSourceClass.new(buffer.callMethod("clone")) as Closeable).use { gzippedResponseBody ->
@@ -79,8 +83,9 @@ class OkHttpDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     }
 
     private fun bodyHasUnknownEncoding(headers: Any?): Boolean {
-        val contentEncoding =
-            headers?.callMethodAs<String?>("get", "Content-Encoding") ?: return false
+        val contentEncoding = headers?.callMethodAs<String?>(
+            instance.getHeader(), "Content-Encoding"
+        ) ?: return false
         return !contentEncoding.equals("identity", ignoreCase = true) &&
                 !contentEncoding.equals("gzip", ignoreCase = true)
     }
