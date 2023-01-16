@@ -154,10 +154,11 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     val projectionPlayUrlClass by Weak { "com.bilibili.lib.projection.internal.api.model.ProjectionPlayUrl" from mClassLoader }
     val okioClass by Weak { mHookInfo.okio2.class_ from mClassLoader }
     val bufferedSourceClass by Weak { mHookInfo.okio2.bufferedSource from mClassLoader }
-    val realCallClass by Weak { mHookInfo.okHttp.realCall from mClassLoader }
+    val realCallClass by Weak { mHookInfo.okHttp.realCall.class_ from mClassLoader }
     val responseClass by Weak { mHookInfo.okHttp.response.class_ from mClassLoader }
     val responseBodyClass by Weak { mHookInfo.okHttp.responseBody.class_ from mClassLoader }
     val mediaTypeClass by Weak { mHookInfo.okHttp.mediaType.class_ from mClassLoader }
+    val callbackClass by Weak { mHookInfo.okHttp.callback from mClassLoader }
     val biliCallClass by Weak { mHookInfo.biliCall.class_ from mClassLoader }
     val parserClass by Weak { mHookInfo.biliCall.parser from mClassLoader }
     val livePagerRecyclerViewClass by Weak { mHookInfo.livePagerRecyclerView from mClassLoader }
@@ -264,6 +265,8 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
 
     fun urlField() = mHookInfo.okHttp.request.url.orNull
 
+    fun methodFiled() = mHookInfo.okHttp.request.method.orNull
+
     fun gsonToJson() = mHookInfo.gsonHelper.toJson.orNull
 
     fun gsonFromJson() = mHookInfo.gsonHelper.fromJson.orNull
@@ -314,6 +317,16 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
 
     fun bodyField() = mHookInfo.okHttp.response.body.orNull
 
+    fun protocolField() = mHookInfo.okHttp.response.protocol.orNull
+
+    fun headersField() = mHookInfo.okHttp.response.headers.orNull
+
+    fun getHeader() = mHookInfo.okHttp.headers.get.orNull
+
+    fun execute() = mHookInfo.okHttp.realCall.execute.orNull
+
+    fun enqueue() = mHookInfo.okHttp.realCall.enqueue.orNull
+
     fun source() = mHookInfo.okio2.source.orNull
 
     fun sourceBuffer() = mHookInfo.okio2.sourceBuffer.orNull
@@ -321,6 +334,8 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
     fun create() = mHookInfo.okHttp.responseBody.create.orNull
 
     fun string() = mHookInfo.okHttp.responseBody.string.orNull
+
+    fun bodySource() = mHookInfo.okHttp.responseBody.source.orNull
 
     fun get() = mHookInfo.okHttp.mediaType.get.orNull
 
@@ -890,25 +905,53 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 ).asSequence().firstNotNullOfOrNull {
                     dexHelper.decodeMethodIndex(it)
                 }?.declaringClass ?: return@okHttp
-                val executeMethod = dexHelper.findMethodUsingString(
+                val realCallMethods = dexHelper.findMethodUsingString(
                     "Already Executed",
                     false,
                     -1,
-                    0,
+                    -1,
                     null,
                     dexHelper.encodeClassIndex(realCallClass),
                     null,
                     null,
                     null,
-                    true
-                ).asSequence().firstNotNullOfOrNull {
-                    dexHelper.decodeMethodIndex(it)
+                    false
+                ).map { dexHelper.decodeMethodIndex(it) as Method }
+                    .takeIf { it.size == 2 }
+                    ?: return@okHttp
+                val executeMethod = realCallMethods.find { it.parameterTypes.isEmpty() }
+                    ?: return@okHttp
+                val enqueueMethod = realCallMethods.find { it.parameterTypes.size == 1 }
+                    ?: return@okHttp
+                val headersClass = "okhttp3.Headers".from(classloader)
+                    ?: dexHelper.findMethodUsingString(
+                        "Expected alternating header names and values",
+                        false,
+                        -1,
+                        -1,
+                        null,
+                        -1,
+                        null,
+                        null,
+                        null,
+                        true
+                    ).firstOrNull()?.let {
+                        dexHelper.decodeMethodIndex(it)
+                    }?.declaringClass ?: return@okHttp
+                val headerGetMethod = headersClass.declaredMethods.find { m ->
+                    m.isPublic && m.returnType == String::class.java && m.parameterTypes.let {
+                        it.size == 1 && it[0] == String::class.java
+                    }
                 } ?: return@okHttp
                 request = request {
                     class_ = class_ { name = requestClass.name }
                     url = field {
                         name = requestClass.findFirstFieldByExactTypeOrNull(urlClass)?.name
                             ?: return@field
+                    }
+                    method = field {
+                        name = requestClass.findFirstFieldByExactTypeOrNull(String::class.java)
+                            ?.name ?: return@field
                     }
                 }
                 response = response {
@@ -926,6 +969,14 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                         name = responseClass.findFirstFieldByExactTypeOrNull(responseBodyClass)
                             ?.name ?: return@field
                     }
+                    protocol = field {
+                        name = responseClass.declaredFields.find { it.type.isEnum }?.name
+                            ?: return@field
+                    }
+                    headers = field {
+                        name = responseClass.findFirstFieldByExactTypeOrNull(headersClass)
+                            ?.name ?: return@field
+                    }
                 }
                 responseBody = responseBody {
                     class_ = class_ { name = responseBodyClass.name }
@@ -939,6 +990,11 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                             it.parameterTypes.isEmpty() && it.returnType == String::class.java
                         }?.name ?: return@method
                     }
+                    source = method {
+                        name = responseBodyClass.declaredMethods.find {
+                            Modifier.isAbstract(it.modifiers) && it.returnType.isInterface && it.parameterTypes.isEmpty()
+                        }?.name ?: return@method
+                    }
                 }
                 mediaType = mediaType {
                     class_ = class_ { name = getMethod.declaringClass.name }
@@ -947,11 +1003,13 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 realCall = realCall {
                     class_ = class_ { name = realCallClass.name }
                     execute = method { name = executeMethod.name }
-                    request = field {
-                        name = realCallClass.findFirstFieldByExactTypeOrNull(requestClass)?.name
-                            ?: return@realCall
-                    }
+                    enqueue = method { name = enqueueMethod.name }
                 }
+                headers = headers {
+                    class_ = class_ { name = headersClass.name }
+                    get = method { name = headerGetMethod.name }
+                }
+                callback = class_ { name = enqueueMethod.parameterTypes.first().name }
             }
             okio2 = okio2 {
                 val okioClass = "okio.Okio".from(classloader)
