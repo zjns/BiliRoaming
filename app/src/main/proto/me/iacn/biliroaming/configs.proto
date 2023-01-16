@@ -21,6 +21,7 @@ message Field {
 message Request {
   optional Class class = 1;
   optional Field url = 2;
+  optional Field method = 3;
 }
 
 message Response {
@@ -28,15 +29,29 @@ message Response {
   optional Field request = 2;
   optional Field code = 3;
   optional Field body = 4;
+  optional Field protocol = 5;
+  optional Field headers = 6;
 }
 
 message ResponseBody {
   optional Class class = 1;
   optional Method create = 2;
   optional Method string = 3;
+  optional Method source = 4;
 }
 
 message MediaType {
+  optional Class class = 1;
+  optional Method get = 2;
+}
+
+message RealCall {
+  optional Class class = 1;
+  optional Method execute = 2;
+  optional Method enqueue = 3;
+}
+
+message Headers {
   optional Class class = 1;
   optional Method get = 2;
 }
@@ -46,7 +61,9 @@ message OkHttp {
   optional Response response = 2;
   optional ResponseBody response_body = 3;
   optional MediaType mediaType = 4;
-  optional Class realCall = 5;
+  optional RealCall realCall = 5;
+  optional Headers headers = 6;
+  optional Class callback = 7;
 }
 
 message Okio2 {
