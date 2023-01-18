@@ -154,7 +154,8 @@ class JsonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                             }
                         }
                     } else {
-                        if (sPrefs.getBoolean("modify_vip_section_style", false)
+                        if (sPrefs.getBoolean("hidden", false)
+                            && sPrefs.getBoolean("modify_vip_section_style", false)
                             && !sPrefs.getBoolean("remove_vip_section", false)
                         ) {
                             val vipSection = result.getObjectField("vipSectionV2")
@@ -330,24 +331,6 @@ class JsonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 dmAdvertClass -> if (sPrefs.getBoolean("hidden", false)
                     && sPrefs.getBoolean("block_up_rcmd_ads", false)
                 ) result.setObjectField("ads", null)
-            }
-        }
-
-        if (sPrefs.getBoolean("modify_vip_section_style", false)
-            || sPrefs.getBoolean("remove_vip_section", false)
-        ) {
-            val vipEntranceViewClass =
-                "tv.danmaku.bili.ui.main2.mine.widgets.MineVipEntranceView".from(mClassLoader)
-            val vipEntranceViewField =
-                vipEntranceViewClass?.let { instance.userFragmentClass?.findFieldByExactType(it) }
-            instance.userFragmentClass?.hookAfterMethod(
-                "onCreateView",
-                LayoutInflater::class.java,
-                ViewGroup::class.java,
-                Bundle::class.java
-            ) {
-                (vipEntranceViewField?.get(it.thisObject) as? View)?.visibility = View.GONE
-                vipEntranceViewField?.set(it.thisObject, null)
             }
         }
 
