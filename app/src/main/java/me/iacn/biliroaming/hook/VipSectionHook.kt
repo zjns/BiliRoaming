@@ -13,7 +13,8 @@ import me.iacn.biliroaming.utils.sPrefs
 class VipSectionHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     override fun startHook() {
         if (!sPrefs.getBoolean("hidden", false)
-            || !sPrefs.getBoolean("remove_vip_section", false)
+            || (!sPrefs.getBoolean("modify_vip_section_style", false)
+                    && !sPrefs.getBoolean("remove_vip_section", false))
         ) return
         val vipEntranceViewClass =
             "tv.danmaku.bili.ui.main2.mine.widgets.MineVipEntranceView".from(mClassLoader)
