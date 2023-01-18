@@ -184,8 +184,6 @@
     <string name="remove_comment_cm_title">移除评论页顶部推广横条</string>
     <string name="modify_vip_section_style_title">修改我的大会员样式</string>
     <string name="modify_vip_section_style_summary">我的页面将大会员样式从横幅修改为正常样式</string>
-    <string name="remove_vip_section_title">移除我的大会员横幅</string>
-    <string name="remove_vip_section_summary">我的页面将大会员横幅移除</string>
     <string name="replace_story_video_title">替换竖版视频</string>
     <string name="replace_story_video_summary">替换竖版视频为正常视频</string>
     <string name="customize_drawer_title">自定义我的页面</string>

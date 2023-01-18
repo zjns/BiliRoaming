@@ -278,10 +278,6 @@
             android:summary="@string/modify_vip_section_style_summary"
             android:title="@string/modify_vip_section_style_title" />
         <SwitchPreference
-            android:key="remove_vip_section"
-            android:summary="@string/remove_vip_section_summary"
-            android:title="@string/remove_vip_section_title" />
-        <SwitchPreference
             android:dependency="hidden"
             android:key="purify_splash"
             android:summary="@string/purify_splash_summary"
