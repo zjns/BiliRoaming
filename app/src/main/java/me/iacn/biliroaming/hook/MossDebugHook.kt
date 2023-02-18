@@ -14,8 +14,7 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             Log.d("blocking moss method ${param.method} req:\n${param.args[0]}")
             Log.d("blocking moss method ${param.method} reply:\n${param.result}")
         } else if (!after && !param.args.isNullOrEmpty()
-            && "com.bilibili.lib.moss.api.MossResponseHandler".on(mClassLoader)
-                .isInstance(param.args.last())
+            && instance.mossResponseHandlerClass?.isInstance(param.args.last()) == true
         ) {
             val handler = param.args.last()
             Log.d("call async moss method ${param.method}, handler type: ${handler.javaClass.name}")
@@ -25,7 +24,7 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             param.args[param.args.lastIndex] = Proxy.newProxyInstance(
                 handler.javaClass.classLoader,
                 //handler.javaClass.interfaces,
-                arrayOf("com.bilibili.lib.moss.api.MossResponseHandler".on(mClassLoader))
+                arrayOf(instance.mossResponseHandlerClass)
             ) { _, m, args ->
                 if (m.name == "onNext") {
                     Log.d("async moss method ${param.method} reply:\n${args[0]}")
@@ -69,8 +68,8 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         Log.d("async moss method $mossMethod req:\n${param.args[1]}")
         param.args[2] = Proxy.newProxyInstance(
             handler.javaClass.classLoader,
-            //handler.javaClass.interfaces
-            arrayOf("com.bilibili.lib.moss.api.MossResponseHandler".on(mClassLoader))
+            //handler.javaClass.interfaces,
+            arrayOf(instance.mossResponseHandlerClass)
         ) { _, m, args ->
             if (m.name == "onNext") {
                 Log.d("async moss method $mossMethod reply:\n${args[0]}")
@@ -113,13 +112,20 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     }
 
     override fun startHook() {
-        "com.bilibili.lib.moss.api.MossService".from(mClassLoader)?.declaredMethods?.run {
+        var mossServiceClass = "com.bilibili.lib.moss.api.MossService".from(mClassLoader)
+        if (mossServiceClass == null || mossServiceClass.isInterface)
+            mossServiceClass = "com.bilibili.lib.moss.api.MossServiceImp".from(mClassLoader)
+        mossServiceClass?.declaredMethods?.run {
             find { it.name == "asyncUnaryCall" }?.hookBeforeMethod(asyncMossLogHooker)
             find { it.name == "blockingUnaryCall" }?.hookAfterMethod(blockingMossLogHooker)
         }
 
-        "com.google.protobuf.MessageLiteToString".hookBeforeMethod(
-            mClassLoader,
+        val messageLiteToStringClass = "com.google.protobuf.MessageLiteToString".from(mClassLoader)
+        val byteStringClass = "com.google.protobuf.ByteString".from(mClassLoader)
+        val generatedMessageLiteClass =
+            "com.google.protobuf.GeneratedMessageLite".from(mClassLoader)
+        val anyClass = "com.google.protobuf.Any".from(mClassLoader)
+        messageLiteToStringClass?.hookBeforeMethod(
             "printField",
             StringBuilder::class.java,
             Int::class.javaPrimitiveType,
@@ -145,13 +151,13 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     sb.append(": \"")
                     sb.append(obj)
                     sb.append('"')
-                } else if (obj.javaClass.name == "com.google.protobuf.ByteString") {
+                } else if (obj?.javaClass == byteStringClass) {
                     sb.append(": \"")
                     sb.append(obj.callMethod("toString", Charsets.UTF_8))
                     sb.append('"')
-                } else if (obj.javaClass.superclass?.name == "com.google.protobuf.GeneratedMessageLite") {
+                } else if (obj?.javaClass?.superclass == generatedMessageLiteClass) {
                     sb.append(" {")
-                    val realObj = if (obj.javaClass.name == "com.google.protobuf.Any") {
+                    val realObj = if (obj.javaClass == anyClass) {
                         val typeUrl = obj.callMethodAs<String>("getTypeUrl")
                         val type = typeUrl.substringAfter('/')
                         val realClass = "com.bapis.$type".from(mClassLoader)
@@ -159,7 +165,7 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         realClass?.callStaticMethod("parseFrom", obj.callMethod("getValue"))
                             ?: obj
                     } else obj
-                    "com.google.protobuf.MessageLiteToString".on(mClassLoader)
+                    messageLiteToStringClass
                         .callStaticMethod("reflectivePrintWithIndent", realObj, sb, indent + 2)
                     sb.appendLine()
                     repeat(indent) { sb.append(' ') }
@@ -173,7 +179,7 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     sb.append('}')
                 } else {
                     sb.append(": ")
-                    sb.append(obj.toString())
+                    sb.append(obj?.toString())
                 }
             }
             param.result = null
