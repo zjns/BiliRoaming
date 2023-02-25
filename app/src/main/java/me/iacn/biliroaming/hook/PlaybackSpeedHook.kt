@@ -12,18 +12,25 @@ import me.iacn.biliroaming.BiliBiliPackage.Companion.instance
 import me.iacn.biliroaming.from
 import me.iacn.biliroaming.orNull
 import me.iacn.biliroaming.utils.*
+import java.lang.reflect.Field
 
 class PlaybackSpeedHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     companion object {
-        val newSpeedArray =
-            floatArrayOf(10.0F, 4.0F, 3.0F, 2.0F, 1.5F, 1.25F, 1.0F, 0.75F, 0.5F)
+        val newSpeedArray by lazy {
+            sPrefs.getString("playback_speed_override", null).let { v ->
+                if (v.isNullOrEmpty()) floatArrayOf()
+                else v.split(' ').map { it.toFloat() }.toFloatArray()
+            }
+        }
         val newSpeedReversedArray = newSpeedArray.reversedArray()
-        var playbackSpeed = 1.0F
     }
+
+    var playbackSpeed = 1.0F
+    private var speedTextGroupField: Field? = null
 
     @SuppressLint("SetTextI18n")
     override fun startHook() {
-        if (!sPrefs.getBoolean("more_playback_speed", false)) return
+        if (newSpeedArray.isEmpty()) return
 
         instance.hookInfo.playbackSpeed.speedAdapterList.forEach {
             it.class_.from(mClassLoader)?.hookAfterAllConstructors { param ->
@@ -51,14 +58,14 @@ class PlaybackSpeedHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             val speedTextColorId = getResId("selector_bplayer_selector_panel_text_pink", "color")
             clazz?.hookAfterAllConstructors { param ->
                 val self = param.thisObject
-                val speedTextGroupField = clazz.declaredFields.filter {
+                val speedTextGroupField = this.speedTextGroupField ?: clazz.declaredFields.filter {
                     it.type == ViewGroup::class.java
                 }.firstNotNullOfOrNull {
                     it.isAccessible = true
                     if ((it.get(self) as? ViewGroup)?.id == playSpeedTextGroupId) {
                         it
                     } else null
-                } ?: return@hookAfterAllConstructors
+                }?.also { this.speedTextGroupField = it } ?: return@hookAfterAllConstructors
                 val speedTextGroup = speedTextGroupField.get(self) as ViewGroup
                 val context = speedTextGroup.context
                 val scrollView = HorizontalScrollView(context).apply {
