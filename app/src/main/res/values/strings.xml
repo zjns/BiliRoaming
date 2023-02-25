@@ -184,8 +184,12 @@
     <string name="remove_comment_cm_title">移除评论页顶部推广横条</string>
     <string name="modify_vip_section_style_title">修改我的大会员样式</string>
     <string name="modify_vip_section_style_summary">我的页面将大会员样式从横幅修改为正常样式</string>
-    <string name="more_playback_speed_title">扩展播放速度列表</string>
-    <string name="more_playback_speed_summary">视频及听视频播放速度列表添加3X、4X及10X倍数播放选项</string>
+    <string name="playback_speed_override_title">自定义播放速度列表</string>
+    <string name="playback_speed_override_summary">同时应用到视频及听视频播放速度列表</string>
+    <string name="playback_speed_override_hint">空格分隔，例如：2 1.5 1，空表示默认</string>
+    <string name="playback_speed_override_invalid">输入无效！</string>
+    <string name="playback_speed_override_must">必须包含默认倍速1！</string>
+    <string name="playback_speed_override_ok">重启生效</string>
     <string name="replace_story_video_title">替换竖版视频</string>
     <string name="replace_story_video_summary">替换竖版视频为正常视频</string>
     <string name="customize_drawer_title">自定义我的页面</string>
