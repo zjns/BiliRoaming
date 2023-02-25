@@ -116,6 +116,7 @@ message PlayerCoreService {
   optional Method get_default_speed = 2;
   optional Method seek_to = 3;
   optional Method on_seek_complete = 4;
+  optional Method update_speed = 6;
   optional Class seek_complete_listener = 5;
 }
 
@@ -266,6 +267,59 @@ message SuperMenu {
   optional Field click_listener = 5;
 }
 
+message SpeedAdapter {
+  optional Class class = 1;
+  optional Field speed_array = 2;
+}
+
+message StorySuperMenu {
+  optional Class class = 1;
+  optional Field speed_array = 2;
+}
+
+message MenuFuncSegment {
+  optional Class class = 1;
+  optional Field speed_array = 2;
+}
+
+message NewShareService {
+  optional Class class = 1;
+  optional Field speed_array = 2;
+}
+
+message PlaySpeedSetting {
+  optional Class class = 1;
+  optional Field speed_array = 2;
+  optional Field speed_text_id_array = 3;
+}
+
+message PodcastSpeedSeekBar {
+  optional Class class = 1;
+  optional Field speed_array = 2;
+  optional Field speed_name_list = 3;
+}
+
+message AbsMusicPlayerPanelSegment {
+  optional Class class = 1;
+  optional Field speed_array = 2;
+}
+
+message PlayerSpeedWidget {
+  optional Class class = 1;
+  optional Method update = 2;
+}
+
+message PlaybackSpeed {
+  repeated SpeedAdapter speed_adapter = 1;
+  optional StorySuperMenu story_super_menu = 2;
+  optional MenuFuncSegment menu_func_segment = 3;
+  optional NewShareService new_share_service = 4;
+  repeated PlaySpeedSetting play_speed_setting = 5;
+  optional PodcastSpeedSeekBar podcast_speed_seek_bar = 6;
+  optional AbsMusicPlayerPanelSegment music_player_panel = 7;
+  repeated PlayerSpeedWidget player_speed_widget = 8;
+}
+
 message PlayerFullStoryWidget {
   optional Class class = 1;
   optional Method method = 2;
@@ -308,6 +362,7 @@ message HookInfo {
   optional Okio2 okio2 = 503;
   optional Method set_line_to_all_count = 504;
   optional SuperMenu super_menu = 505;
+  optional PlaybackSpeed playback_speed = 506;
   optional MapIds map_ids = 2;
   int32 client_version_code = 3;
   int32 module_version_code = 4;
