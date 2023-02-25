@@ -115,6 +115,7 @@ class XposedInit : IXposedHookLoadPackage, IXposedHookZygoteInit {
                     if (platform == "android")
                         startHook(DarkSwitchHook(lpparam.classLoader))
                     startHook(SubtitleDownloadHook(lpparam.classLoader))
+                    startHook(PlaybackSpeedHook(lpparam.classLoader))
                     startHook(OkHttpHook(lpparam.classLoader))
                     startHook(TextFoldHook(lpparam.classLoader))
                     startHook(PurifyShareHook(lpparam.classLoader))
