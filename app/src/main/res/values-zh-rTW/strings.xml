@@ -185,8 +185,12 @@
     <string name="remove_comment_cm_title">移除評論頁頂部推廣橫條</string>
     <string name="modify_vip_section_style_title">修改我的大會員樣式</string>
     <string name="modify_vip_section_style_summary">我的頁面將大會員樣式從橫幅修改為正常樣式</string>
-    <string name="more_playback_speed_title">擴展播放速度列表</string>
-    <string name="more_playback_speed_summary">影片及聽影片播放速度列表添加3X、4X及10X倍數播放選項</string>
+    <string name="playback_speed_override_title">自訂播放速度列表</string>
+    <string name="playback_speed_override_summary">同時應用到影片及聽影片播放速度列表</string>
+    <string name="playback_speed_override_hint">空格分隔，例如：2 1.5 1，空表示預設</string>
+    <string name="playback_speed_override_invalid">輸入無效！</string>
+    <string name="playback_speed_override_must">必須包含預設倍速1！</string>
+    <string name="playback_speed_override_ok">重啟生效</string>
     <string name="replace_story_video_title">取代豎版影片</string>
     <string name="replace_story_video_summary">取代豎版影片為正常影片</string>
     <string name="customize_drawer_title">自訂我的頁面</string>
