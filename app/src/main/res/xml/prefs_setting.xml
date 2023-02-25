@@ -200,10 +200,10 @@
             android:key="block_update"
             android:title="@string/block_update_title" />
 
-        <SwitchPreference
-            android:key="more_playback_speed"
-            android:summary="@string/more_playback_speed_summary"
-            android:title="@string/more_playback_speed_title" />
+        <Preference
+            android:key="playback_speed_override"
+            android:summary="@string/playback_speed_override_summary"
+            android:title="@string/playback_speed_override_title" />
 
         <SwitchPreference
             android:key="save_comment_image"
