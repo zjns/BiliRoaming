@@ -15,21 +15,29 @@ import me.iacn.biliroaming.utils.*
 import java.lang.reflect.Field
 
 class PlaybackSpeedHook(classLoader: ClassLoader) : BaseHook(classLoader) {
-    companion object {
-        val newSpeedArray by lazy {
-            sPrefs.getString("playback_speed_override", null).let { v ->
-                if (v.isNullOrEmpty()) floatArrayOf()
-                else v.split(' ').map { it.toFloat() }.toFloatArray()
-            }
-        }
-        val newSpeedReversedArray = newSpeedArray.reversedArray()
+    private val newSpeedArray = sPrefs.getString("playback_speed_override", null).let { v ->
+        if (v.isNullOrEmpty()) floatArrayOf()
+        else v.split(' ').map { it.toFloat() }.toFloatArray()
     }
+    private val newSpeedReversedArray = newSpeedArray.reversedArray()
+    private val defaultSpeed = sPrefs.getFloat("default_playback_speed", 0F)
 
-    var playbackSpeed = 1.0F
+    private var playbackSpeed = defaultSpeed
     private var speedTextGroupField: Field? = null
 
     @SuppressLint("SetTextI18n")
     override fun startHook() {
+        if (defaultSpeed != 0F) {
+            instance.hookInfo.playbackSpeed.playerSettingService.run {
+                class_.from(mClassLoader)?.hookBeforeMethod(
+                    getFloat.orNull, String::class.java, Float::class.javaPrimitiveType
+                ) { param ->
+                    val key = param.args[0] as String
+                    if (key == "player_key_video_speed")
+                        param.args[1] = defaultSpeed
+                }
+            }
+        }
         if (newSpeedArray.isEmpty()) return
 
         instance.hookInfo.playbackSpeed.speedAdapterList.forEach {

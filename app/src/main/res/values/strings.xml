@@ -190,6 +190,9 @@
     <string name="playback_speed_override_invalid">输入无效！</string>
     <string name="playback_speed_override_must">必须包含默认倍速1！</string>
     <string name="playback_speed_override_ok">重启生效</string>
+    <string name="default_playback_speed_title">默认播放速度</string>
+    <string name="default_playback_speed_summary">仅应用到视频播放</string>
+    <string name="default_playback_speed_hint">例如：1.5，空表示默认</string>
     <string name="replace_story_video_title">替换竖版视频</string>
     <string name="replace_story_video_summary">替换竖版视频为正常视频</string>
     <string name="customize_drawer_title">自定义我的页面</string>
