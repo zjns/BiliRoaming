@@ -979,6 +979,30 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                         update = method { name = m.name }
                     }
                 }.let { playerSpeedWidget.addAll(it) }
+                playerSettingService = playerSettingService {
+                    val clazz = dexHelper.findMethodUsingString(
+                        "could not remove all key for scope: ",
+                        false,
+                        -1,
+                        -1,
+                        null,
+                        -1,
+                        null,
+                        null,
+                        null,
+                        true
+                    ).firstOrNull()?.let {
+                        dexHelper.decodeMethodIndex(it)?.declaringClass
+                    } ?: return@playerSettingService
+                    val getFloatMethod = clazz.declaredMethods.find { m ->
+                        val floatType = Float::class.javaPrimitiveType
+                        m.returnType == floatType && m.parameterTypes.let {
+                            it.size == 2 && it[0] == String::class.java && it[1] == floatType
+                        }
+                    } ?: return@playerSettingService
+                    class_ = class_ { name = clazz.name }
+                    getFloat = method { name = getFloatMethod.name }
+                }
             }
 
             bangumiApiResponse = class_ {
