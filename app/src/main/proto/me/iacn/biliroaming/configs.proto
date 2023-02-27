@@ -315,6 +315,11 @@ message PlayerSpeedWidget {
   optional Method update = 2;
 }
 
+message PlayerSettingService {
+  optional Class class = 1;
+  optional Method get_float = 2;
+}
+
 message PlaybackSpeed {
   repeated SpeedAdapter speed_adapter = 1;
   optional StorySuperMenu story_super_menu = 2;
@@ -324,6 +329,7 @@ message PlaybackSpeed {
   optional PodcastSpeedSeekBar podcast_speed_seek_bar = 6;
   optional AbsMusicPlayerPanelSegment music_player_panel = 7;
   repeated PlayerSpeedWidget player_speed_widget = 8;
+  optional PlayerSettingService player_setting_service = 9;
 }
 
 message PlayerFullStoryWidget {
