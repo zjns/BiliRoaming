@@ -22,6 +22,7 @@ import android.os.Bundle
 import android.preference.*
 import android.provider.MediaStore
 import android.text.Editable
+import android.text.InputType
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.TextWatcher
@@ -109,6 +110,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             findPreference("text_fold")?.onPreferenceClickListener = this
             findPreference("misc_remove_ads")?.onPreferenceClickListener = this
             findPreference("playback_speed_override")?.onPreferenceClickListener = this
+            findPreference("default_playback_speed")?.onPreferenceClickListener = this
             findPreference("customize_dynamic")?.onPreferenceClickListener = this
             checkCompatibleVersion()
             searchItems = retrieve(preferenceScreen)
@@ -873,7 +875,8 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                                 return@setOnClickListener
                             }
                             val speedList = text.runCatchingOrNull {
-                                split(' ').filter { it.isNotBlank() }.map { it.toFloat() }
+                                split(' ').filter { it.isNotBlank() }
+                                    .map { it.toFloat() }.filter { it > 0F && it.isFinite() }
                             }
                             if (speedList == null) {
                                 Log.toast(
@@ -889,6 +892,52 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                                 val formatSpeedText = speedList.joinToString(" ")
                                 sPrefs.edit().putString("playback_speed_override", formatSpeedText)
                                     .apply()
+                                Log.toast(
+                                    activity.getString(R.string.playback_speed_override_ok),
+                                    true
+                                )
+                                dismiss()
+                            }
+                        }
+                    }
+                }.show()
+            return true
+        }
+
+        private fun onDefaultPlaybackSpeedClick(): Boolean {
+            val editText = EditText(activity)
+            editText.setHint(R.string.default_playback_speed_hint)
+            editText.setText(
+                sPrefs.getFloat("default_playback_speed", 0F)
+                    .takeIf { it != 0F }?.toString().orEmpty()
+            )
+            editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+            AlertDialog.Builder(activity)
+                .setTitle(R.string.default_playback_speed_title)
+                .setView(editText)
+                .setPositiveButton(android.R.string.ok, null)
+                .setNegativeButton(android.R.string.cancel, null)
+                .create().apply {
+                    setOnShowListener {
+                        getButton(Dialog.BUTTON_POSITIVE)?.setOnClickListener {
+                            val text = editText.text.toString().trim()
+                            if (text.isEmpty()) {
+                                sPrefs.edit().remove("default_playback_speed").apply()
+                                Log.toast(
+                                    activity.getString(R.string.playback_speed_override_ok),
+                                    true
+                                )
+                                dismiss()
+                                return@setOnClickListener
+                            }
+                            val speed = text.toFloatOrNull()
+                            if (speed == null || speed <= 0F || !speed.isFinite()) {
+                                Log.toast(
+                                    activity.getString(R.string.playback_speed_override_invalid),
+                                    true
+                                )
+                            } else {
+                                sPrefs.edit().putFloat("default_playback_speed", speed).apply()
                                 Log.toast(
                                     activity.getString(R.string.playback_speed_override_ok),
                                     true
@@ -932,6 +981,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             "text_fold" -> onTextFoldClick()
             "misc_remove_ads" -> run { MiscRemoveAdsDialog(activity, prefs).show(); true }
             "playback_speed_override" -> onPlaybackSpeedOverrideClick()
+            "default_playback_speed" -> onDefaultPlaybackSpeedClick()
             "customize_dynamic" -> onCustomDynamicClick()
             "danmaku_filter" -> onDanmakuFilterClick()
             else -> false
