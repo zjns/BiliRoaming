@@ -191,6 +191,9 @@
     <string name="playback_speed_override_invalid">輸入無效！</string>
     <string name="playback_speed_override_must">必須包含預設倍速1！</string>
     <string name="playback_speed_override_ok">重啟生效</string>
+    <string name="default_playback_speed_title">默認播放速度</string>
+    <string name="default_playback_speed_summary">僅應用到影片播放</string>
+    <string name="default_playback_speed_hint">例如：1.5，空表示預設</string>
     <string name="replace_story_video_title">取代豎版影片</string>
     <string name="replace_story_video_summary">取代豎版影片為正常影片</string>
     <string name="customize_drawer_title">自訂我的頁面</string>
