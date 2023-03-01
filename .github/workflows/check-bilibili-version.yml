@@ -96,6 +96,7 @@ jobs:
           else
             ver="6.60.0"; ver_code="6600300"; sn="7796011"; iv="6600310"
           fi
+          ver="7.18.0"; ver_code="7180300"; sn="7796011"; iv="11246165"
 
           pip3 install -U pip
           pip3 install -U urllib3
@@ -205,10 +206,10 @@ jobs:
           echo "Changelog: $n_changelog"
           echo "Download url: $n_url"
 
-          if [[ -n "$my_ver" && "$n_my_ver" != "$my_ver" ]]; then
+          #if [[ -n "$my_ver" && "$n_my_ver" != "$my_ver" ]]; then
             echo "Found new module: $n_my_ver"
             echo "new_my=1" >> $GITHUB_OUTPUT
-          fi
+          #fi
 
           echo "changelog=$n_changelog" > version
           echo "ver=$n_ver" >> version
