@@ -275,7 +275,7 @@ jobs:
       - name: Generate signing config
         run: |
           key_base64="${{ secrets.SIGNING_KEY }}"
-          echo -n "$key_base64" | base64 -d > signing.jks
+          echo -n "$key_base64" | base64 -d > app/signing.jks
           echo "releaseStoreFile=signing.jks" >> gradle.properties
           echo "releaseStorePassword=android" >> gradle.properties
           echo "releaseKeyAlias=androiddebugkey" >> gradle.properties
