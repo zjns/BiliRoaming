@@ -125,6 +125,7 @@ class XposedInit : IXposedHookLoadPackage, IXposedHookZygoteInit {
                     startHook(VipSectionHook(lpparam.classLoader))
                     startHook(CommentImageHook(lpparam.classLoader))
                     startHook(WebViewHook(lpparam.classLoader))
+                    startHook(AdCommonHook(lpparam.classLoader))
                 }
 
                 lpparam.processName.endsWith(":web") -> {

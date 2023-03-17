@@ -182,6 +182,7 @@
     <string name="misc_remove_ads_title">去广告杂项</string>
     <string name="remove_search_ads_title">移除搜索推广</string>
     <string name="remove_comment_cm_title">移除评论页顶部推广横条</string>
+    <string name="remove_ad_extra_title">移除AdExtra参数</string>
     <string name="modify_vip_section_style_title">修改我的大会员样式</string>
     <string name="modify_vip_section_style_summary">我的页面将大会员样式从横幅修改为正常样式</string>
     <string name="playback_speed_override_title">自定义播放速度列表</string>
