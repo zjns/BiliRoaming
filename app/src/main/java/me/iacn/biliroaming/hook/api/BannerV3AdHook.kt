@@ -14,9 +14,10 @@ object BannerV3AdHook : ApiHook {
         "https://api.bilibili.com/pgc/page/?"
     )
 
-    override val enabled: Boolean
-        get() = sPrefs.getBoolean("hidden", false)
+    override val enabled by lazy {
+        sPrefs.getBoolean("hidden", false)
                 && sPrefs.getBoolean("purify_banner_ads", false)
+    }
 
     override fun canHandler(api: String) = targetApis.any { api.startsWith(it) }
 
