@@ -7,9 +7,10 @@ import org.json.JSONObject
 object SeasonRcmdHook : ApiHook {
     private const val rcmdApi = "https://api.bilibili.com/pgc/season/app/related/recommend"
 
-    override val enabled: Boolean
-        get() = sPrefs.getBoolean("hidden", false)
+    override val enabled by lazy {
+        sPrefs.getBoolean("hidden", false)
                 && sPrefs.getBoolean("remove_video_relate_promote", false)
+    }
 
     override fun canHandler(api: String) = api.startsWith(rcmdApi)
 
