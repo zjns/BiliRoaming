@@ -7,9 +7,10 @@ import me.iacn.biliroaming.utils.toJSONObject
 object BannerV8AdHook : ApiHook {
     private const val feedApi = "https://app.bilibili.com/x/v2/feed/index"
 
-    override val enabled: Boolean
-        get() = sPrefs.getBoolean("hidden", false)
+    override val enabled by lazy {
+        sPrefs.getBoolean("hidden", false)
                 && sPrefs.getBoolean("purify_banner_ads", false)
+    }
 
     override fun canHandler(api: String) = api.startsWith(feedApi)
 
