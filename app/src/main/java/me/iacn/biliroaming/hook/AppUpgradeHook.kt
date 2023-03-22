@@ -2,6 +2,7 @@ package me.iacn.biliroaming.hook
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import me.iacn.biliroaming.BiliBiliPackage.Companion.instance
 import me.iacn.biliroaming.BuildConfig
@@ -51,7 +52,9 @@ class AppUpgradeHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 "当前版本: $verName (release-b$buildSn)\n当前内置漫游版本: $mVerName ($mVerCode)"
             preference.callMethodOrNull("setSummary", summary)
         }
-        if (platform != "android" || sPrefs.getBoolean("block_update", false)) return
+        if (platform != "android" || Build.SUPPORTED_64_BIT_ABIS.isEmpty()
+            || sPrefs.getBoolean("block_update", false)
+        ) return
 
         instance.upgradeUtilsClass?.run {
             instance.writeChannelMethod?.let {
