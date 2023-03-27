@@ -8,6 +8,16 @@ import java.lang.reflect.Proxy
 
 class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
 
+    companion object {
+        private val replySkippedMossApis = arrayOf(
+            "com.bapis.bilibili.main.community.reply.v1.ReplyMoss#mainList",
+            "com.bapis.bilibili.community.service.dm.v1.DMMoss#dmView",
+        )
+        private val allSkippedMossApis = arrayOf(
+            "com.bapis.bilibili.app.resource.v1.ModuleMoss#list"
+        )
+    }
+
     private val secondMossLogHooker = fun(param: XC_MethodHook.MethodHookParam, after: Boolean) {
         if (after && (param.method as Method).returnType != Void.TYPE && !param.args.isNullOrEmpty()) {
             Log.d("call blocking moss method ${param.method}")
@@ -48,8 +58,10 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 }
             }
         }
+        if (allSkippedMossApis.contains(mossMethod)) return
         Log.d("call blocking moss method $mossMethod")
         Log.d("blocking moss method $mossMethod req:\n${param.args[1]}")
+        if (replySkippedMossApis.contains(mossMethod)) return
         Log.d("blocking moss method $mossMethod reply:\n${param.result}")
     }
 
@@ -63,9 +75,11 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 }
             }
         }
+        if (allSkippedMossApis.contains(mossMethod)) return
         val handler = param.args[2]
         Log.d("call async moss method $mossMethod, handler type: ${handler.javaClass.name}")
         Log.d("async moss method $mossMethod req:\n${param.args[1]}")
+        if (replySkippedMossApis.contains(mossMethod)) return
         param.args[2] = Proxy.newProxyInstance(
             handler.javaClass.classLoader,
             //handler.javaClass.interfaces,
