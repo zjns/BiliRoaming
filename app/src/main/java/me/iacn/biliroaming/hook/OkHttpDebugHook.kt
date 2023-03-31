@@ -48,6 +48,9 @@ class OkHttpDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         if (bodyHasUnknownEncoding(headers)) {
             Log.d("<-- END HTTP (encoded body omitted)")
             return
+        } else if (method == "HEAD") {
+            Log.d("<-- END HTTP")
+            return
         }
         val responseBody = response.getObjectField(instance.bodyField())
         val source = responseBody?.callMethod(instance.bodySource())
