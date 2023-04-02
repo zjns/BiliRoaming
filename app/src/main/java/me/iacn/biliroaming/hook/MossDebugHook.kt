@@ -12,6 +12,7 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         private val replySkippedMossApis = arrayOf(
             "com.bapis.bilibili.main.community.reply.v1.ReplyMoss#mainList",
             "com.bapis.bilibili.community.service.dm.v1.DMMoss#dmView",
+            "com.bapis.bilibili.community.service.dm.v1.DMMoss#dmSegMobile"
         )
         private val allSkippedMossApis = arrayOf(
             "com.bapis.bilibili.app.resource.v1.ModuleMoss#list"
