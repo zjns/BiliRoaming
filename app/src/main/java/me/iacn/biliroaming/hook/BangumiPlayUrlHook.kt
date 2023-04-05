@@ -344,7 +344,7 @@ class BangumiPlayUrlHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         Log.toast("请求解析服务器发生错误: ${e.message}", alsoLog = true)
                     }
                 } else {
-                    lastSeasonInfo["epid"] = request.callMethod("getVod")
+                    lastSeasonInfo["epid"] = request
                         ?.callMethodAs<Map<String, String>>("getExtraContentMap")?.get("ep_id")
                     if (isDownload) {
                         param.result = fixDownloadProtoUnite(response)
