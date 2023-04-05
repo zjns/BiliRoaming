@@ -41,12 +41,18 @@ class MiscRemoveAdsDialog(val activity: Activity, prefs: SharedPreferences) :
         }
         removeCommentCmSwitch.isChecked = prefs.getBoolean("remove_comment_cm", false)
 
+        val blockDmFeedbackSwitch = string(R.string.block_dm_feedback_title).let {
+            switchPrefsItem(it).let { p -> root.addView(p.first); p.second }
+        }
+        blockDmFeedbackSwitch.isChecked = prefs.getBoolean("block_dm_feedback", false)
+
         setTitle(string(R.string.misc_remove_ads_title))
 
         setPositiveButton(android.R.string.ok) { _, _ ->
             prefs.edit().apply {
                 putBoolean("remove_search_ads", removeSearchAdsSwitch.isChecked)
                 putBoolean("remove_comment_cm", removeCommentCmSwitch.isChecked)
+                putBoolean("block_dm_feedback", blockDmFeedbackSwitch.isChecked)
             }.apply()
             Log.toast(string(R.string.prefs_save_success_and_reboot))
         }
