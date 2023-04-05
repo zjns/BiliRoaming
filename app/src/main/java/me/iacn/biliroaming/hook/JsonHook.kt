@@ -65,6 +65,10 @@ class JsonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         val biliLiveRoomUserInfoClass =
             "com.bilibili.bililive.videoliveplayer.net.beans.gateway.userinfo.BiliLiveRoomUserInfo"
                 .from(mClassLoader)
+        val dmQoeInfoClass = "tv.danmaku.bili.videopage.player.features.qoe.DmQoeInfo"
+            .from(mClassLoader)
+        val geminiDmQoeInfoClass = "tv.danmaku.bili.videopage.player.gemini.qoe.GeminiDmQoeInfo"
+            .from(mClassLoader)
         val liveRoomRecommendCardClass =
             "com.bilibili.bililive.videoliveplayer.net.beans.attentioncard.LiveRoomRecommendCard"
                 .from(mClassLoader)
@@ -326,6 +330,10 @@ class JsonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         playableParam.setIntField("playableType", 0)
                     }
                 }
+
+                dmQoeInfoClass, geminiDmQoeInfoClass -> if (hidden &&
+                    sPrefs.getBoolean("block_dm_feedback", false)
+                ) result.callMethod("setShow", false)
 
                 dmAdvertClass -> if (sPrefs.getBoolean("hidden", false)
                     && sPrefs.getBoolean("block_up_rcmd_ads", false)
