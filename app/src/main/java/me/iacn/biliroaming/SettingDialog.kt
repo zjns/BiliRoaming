@@ -113,6 +113,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             findPreference("misc_remove_ads")?.onPreferenceClickListener = this
             findPreference("playback_speed_override")?.onPreferenceClickListener = this
             findPreference("default_playback_speed")?.onPreferenceClickListener = this
+            findPreference("long_press_playback_speed")?.onPreferenceClickListener = this
             findPreference("customize_dynamic")?.onPreferenceClickListener = this
             checkCompatibleVersion()
             searchItems = retrieve(preferenceScreen)
@@ -921,16 +922,19 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             return true
         }
 
-        private fun onDefaultPlaybackSpeedClick(): Boolean {
+        private fun onPlaybackSpeedClick(longPress: Boolean): Boolean {
+            val title = if (longPress) {
+                R.string.long_press_playback_speed_title
+            } else R.string.default_playback_speed_title
+            val prefKey = if (longPress) "long_press_playback_speed" else "default_playback_speed"
             val editText = EditText(activity)
             editText.setHint(R.string.default_playback_speed_hint)
             editText.setText(
-                sPrefs.getFloat("default_playback_speed", 0F)
-                    .takeIf { it != 0F }?.toString().orEmpty()
+                sPrefs.getFloat(prefKey, 0F).takeIf { it != 0F }?.toString().orEmpty()
             )
             editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
             AlertDialog.Builder(activity)
-                .setTitle(R.string.default_playback_speed_title)
+                .setTitle(title)
                 .setView(editText)
                 .setPositiveButton(android.R.string.ok, null)
                 .setNegativeButton(android.R.string.cancel, null)
@@ -939,7 +943,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                         getButton(Dialog.BUTTON_POSITIVE)?.setOnClickListener {
                             val text = editText.text.toString().trim()
                             if (text.isEmpty()) {
-                                sPrefs.edit().remove("default_playback_speed").apply()
+                                sPrefs.edit().remove(prefKey).apply()
                                 Log.toast(
                                     activity.getString(R.string.playback_speed_override_ok),
                                     true
@@ -954,7 +958,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                                     true
                                 )
                             } else {
-                                sPrefs.edit().putFloat("default_playback_speed", speed).apply()
+                                sPrefs.edit().putFloat(prefKey, speed).apply()
                                 Log.toast(
                                     activity.getString(R.string.playback_speed_override_ok),
                                     true
@@ -998,7 +1002,8 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             "text_fold" -> onTextFoldClick()
             "misc_remove_ads" -> run { MiscRemoveAdsDialog(activity, prefs).show(); true }
             "playback_speed_override" -> onPlaybackSpeedOverrideClick()
-            "default_playback_speed" -> onDefaultPlaybackSpeedClick()
+            "default_playback_speed" -> onPlaybackSpeedClick(false)
+            "long_press_playback_speed" -> onPlaybackSpeedClick(true)
             "customize_dynamic" -> onCustomDynamicClick()
             "danmaku_filter" -> onDanmakuFilterClick()
             else -> false
