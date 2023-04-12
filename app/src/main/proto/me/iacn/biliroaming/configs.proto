@@ -319,6 +319,11 @@ message PlayerSettingService {
   optional Method get_float = 2;
 }
 
+message TripleSpeedService {
+  optional Class class = 1;
+  optional Method update_speed = 2;
+}
+
 message PlaybackSpeed {
   repeated SpeedAdapter speed_adapter = 1;
   optional StorySuperMenu story_super_menu = 2;
@@ -329,6 +334,7 @@ message PlaybackSpeed {
   optional AbsMusicPlayerPanelSegment music_player_panel = 7;
   repeated PlayerSpeedWidget player_speed_widget = 8;
   optional PlayerSettingService player_setting_service = 9;
+  repeated TripleSpeedService triple_speed_service = 10;
 }
 
 message PlayerFullStoryWidget {
