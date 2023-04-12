@@ -226,6 +226,11 @@
             android:summary="@string/default_playback_speed_summary"
             android:title="@string/default_playback_speed_title" />
 
+        <Preference
+            android:key="long_press_playback_speed"
+            android:summary="@string/long_press_playback_speed_summary"
+            android:title="@string/long_press_playback_speed_title" />
+
         <SwitchPreference
             android:key="save_comment_image"
             android:summary="@string/save_comment_image_summary"
