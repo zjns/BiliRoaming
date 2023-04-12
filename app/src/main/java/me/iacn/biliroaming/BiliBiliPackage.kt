@@ -1014,6 +1014,37 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                     class_ = class_ { name = clazz.name }
                     getFloat = method { name = getFloatMethod.name }
                 }
+                dexHelper.findMethodUsingString(
+                    "player.player.gesture.speedup.player",
+                    false,
+                    -1,
+                    -1,
+                    null,
+                    -1,
+                    null,
+                    null,
+                    null,
+                    false
+                ).asSequence().mapNotNull {
+                    dexHelper.findMethodInvoking(
+                        it,
+                        -1,
+                        1,
+                        "VF",
+                        -1,
+                        null,
+                        null,
+                        null,
+                        true
+                    ).firstOrNull()?.let { idx ->
+                        dexHelper.decodeMethodIndex(idx)
+                    }
+                }.map {
+                    tripleSpeedService {
+                        class_ = class_ { name = it.declaringClass.name }
+                        updateSpeed = method { name = it.name }
+                    }
+                }.let { tripleSpeedService.addAll(it.toList()) }
             }
 
             bangumiApiResponse = class_ {
