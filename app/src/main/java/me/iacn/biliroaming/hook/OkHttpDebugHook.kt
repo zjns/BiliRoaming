@@ -15,7 +15,9 @@ class OkHttpDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     override fun startHook() {
         instance.realCallClass?.hookAfterMethod(instance.execute()) { param ->
             val response = param.result
-            logResponse(response, false)
+            runCatchingOrNull {
+                logResponse(response, false)
+            }
         }
         instance.realCallClass?.hookBeforeMethod(
             instance.enqueue(), instance.callbackClass
@@ -27,7 +29,9 @@ class OkHttpDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             ) { _, m, args ->
                 if (m.parameterTypes.size == 2 && !IOException::class.java.isAssignableFrom(m.parameterTypes[1])) {
                     val response = args[1]
-                    logResponse(response, true)
+                    runCatchingOrNull {
+                        logResponse(response, true)
+                    }
                 }
                 m(callback, *args)
             }
