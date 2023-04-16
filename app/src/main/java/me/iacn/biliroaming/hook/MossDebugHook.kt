@@ -4,7 +4,6 @@ import de.robv.android.xposed.XC_MethodHook
 import me.iacn.biliroaming.BiliBiliPackage.Companion.instance
 import me.iacn.biliroaming.utils.*
 import java.lang.reflect.Method
-import java.lang.reflect.Proxy
 
 class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
 
@@ -19,6 +18,8 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         )
     }
 
+    private var skipEnabled = true
+
     private val secondMossLogHooker = fun(param: XC_MethodHook.MethodHookParam, after: Boolean) {
         if (after && (param.method as Method).returnType != Void.TYPE && !param.args.isNullOrEmpty()) {
             Log.d("call blocking moss method ${param.method}")
@@ -32,19 +33,9 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             if (param.args.size > 1) {
                 Log.d("async moss method ${param.method} req:\n${param.args[0]}")
             }
-            param.args[param.args.lastIndex] = Proxy.newProxyInstance(
-                handler.javaClass.classLoader,
-                //handler.javaClass.interfaces,
-                arrayOf(instance.mossResponseHandlerClass)
-            ) { _, m, args ->
-                if (m.name == "onNext") {
-                    Log.d("async moss method ${param.method} reply:\n${args[0]}")
-                }
-                if (args == null) {
-                    m.invoke(handler)
-                } else {
-                    m.invoke(handler, *args)
-                }
+            val lastIndex = param.args.lastIndex
+            param.args[lastIndex] = param.args[lastIndex].mossResponseHandlerProxy {
+                Log.d("async moss method ${param.method} reply:\n${it}")
             }
         }
     }
@@ -59,10 +50,10 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 }
             }
         }
-        if (allSkippedMossApis.contains(mossMethod)) return
+        if (skipEnabled && allSkippedMossApis.contains(mossMethod)) return
         Log.d("call blocking moss method $mossMethod")
         Log.d("blocking moss method $mossMethod req:\n${param.args[1]}")
-        if (replySkippedMossApis.contains(mossMethod)) return
+        if (skipEnabled && replySkippedMossApis.contains(mossMethod)) return
         Log.d("blocking moss method $mossMethod reply:\n${param.result}")
     }
 
@@ -76,24 +67,13 @@ class MossDebugHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 }
             }
         }
-        if (allSkippedMossApis.contains(mossMethod)) return
+        if (skipEnabled && allSkippedMossApis.contains(mossMethod)) return
         val handler = param.args[2]
         Log.d("call async moss method $mossMethod, handler type: ${handler.javaClass.name}")
         Log.d("async moss method $mossMethod req:\n${param.args[1]}")
-        if (replySkippedMossApis.contains(mossMethod)) return
-        param.args[2] = Proxy.newProxyInstance(
-            handler.javaClass.classLoader,
-            //handler.javaClass.interfaces,
-            arrayOf(instance.mossResponseHandlerClass)
-        ) { _, m, args ->
-            if (m.name == "onNext") {
-                Log.d("async moss method $mossMethod reply:\n${args[0]}")
-            }
-            if (args == null) {
-                m.invoke(handler)
-            } else {
-                m.invoke(handler, *args)
-            }
+        if (skipEnabled && replySkippedMossApis.contains(mossMethod)) return
+        param.args[2] = param.args[2].mossResponseHandlerProxy {
+            Log.d("async moss method $mossMethod reply:\n${it}")
         }
     }
 
