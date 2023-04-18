@@ -32,4 +32,6 @@
     <string name="long_press_playback_speed_title">长按播放速度</string>
     <string name="long_press_playback_speed_summary">自定义播放器长按播放速度</string>
     <string name="block_dm_feedback_title">屏蔽播放结束时弹幕氛围反馈</string>
+    <string name="filter_story_title">过滤故事模式视频</string>
+    <string name="filter_story_summary">过滤故事模式（竖屏）下的视频</string>
 </resources>
