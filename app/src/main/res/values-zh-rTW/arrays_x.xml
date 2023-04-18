@@ -1,0 +1,6 @@
+<resources>
+    <string-array name="filter_story_entries">
+        <item>廣告</item>
+        <item>直播</item>
+    </string-array>
+</resources>
