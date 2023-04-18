@@ -14,6 +14,7 @@ class JsonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         Log.d("startHook: Json")
 
         val hidden = sPrefs.getBoolean("hidden", false)
+        val filterStory = sPrefs.getStringSet("filter_story", null).orEmpty()
         val purifyLivePopups = sPrefs.getStringSet("purify_live_popups", null) ?: setOf()
         val unlockPlayLimit = sPrefs.getBoolean("play_arc_conf", false)
 
@@ -70,6 +71,8 @@ class JsonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         val dmQoeInfoClass = "tv.danmaku.bili.videopage.player.features.qoe.DmQoeInfo"
             .from(mClassLoader)
         val geminiDmQoeInfoClass = "tv.danmaku.bili.videopage.player.gemini.qoe.GeminiDmQoeInfo"
+            .from(mClassLoader)
+        val storyFeedResponseClass = "com.bilibili.video.story.api.StoryFeedResponse"
             .from(mClassLoader)
         val liveRoomRecommendCardClass =
             "com.bilibili.bililive.videoliveplayer.net.beans.attentioncard.LiveRoomRecommendCard"
@@ -340,6 +343,17 @@ class JsonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 dmQoeInfoClass, geminiDmQoeInfoClass -> if (hidden &&
                     sPrefs.getBoolean("block_dm_feedback", false)
                 ) result.callMethod("setShow", false)
+
+                storyFeedResponseClass -> if (hidden && filterStory.isNotEmpty()) {
+                    result.runCatchingOrNull {
+                        getObjectField("data")
+                            ?.getObjectFieldAs<MutableList<Any>>("items")
+                            ?.removeAll { item ->
+                                val goto = item.getObjectFieldAs<String?>("goto").orEmpty()
+                                filterStory.any { goto.contains(it) }
+                            }
+                    }
+                }
 
                 dmAdvertClass -> if (hidden && sPrefs.getBoolean("block_up_rcmd_ads", false))
                     result.setObjectField("ads", null)
