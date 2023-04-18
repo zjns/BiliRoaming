@@ -466,6 +466,13 @@
             android:key="misc_remove_ads"
             android:title="@string/misc_remove_ads_title" />
 
+        <MultiSelectListPreference
+            android:entries="@array/filter_story_entries"
+            android:entryValues="@array/filter_story_values"
+            android:key="filter_story"
+            android:summary="@string/filter_story_summary"
+            android:title="@string/filter_story_title" />
+
         <SwitchPreference
             android:dependency="hidden"
             android:key="purify_banner_ads"
