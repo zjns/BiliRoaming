@@ -94,7 +94,7 @@ jobs:
             cycle=`awk -F "=" '$1 == "cycle" {print $2}' version`
             my_ver=`awk -F "=" '$1 == "my_ver" {print $2}' version`
           else
-            ver="6.60.0"; ver_code="6600300"; sn="7796011"; iv="6600310"
+            ver="7.26.0"; ver_code="7260200"; sn="11711174"; iv="7260210"
           fi
 
           pip3 install -U pip
