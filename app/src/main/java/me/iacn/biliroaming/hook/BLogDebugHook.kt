@@ -1,6 +1,5 @@
-package me.iacn.biliroaming
+package me.iacn.biliroaming.hook
 
-import me.iacn.biliroaming.hook.BaseHook
 import me.iacn.biliroaming.utils.from
 import me.iacn.biliroaming.utils.hookBeforeMethod
 import java.lang.reflect.Method
