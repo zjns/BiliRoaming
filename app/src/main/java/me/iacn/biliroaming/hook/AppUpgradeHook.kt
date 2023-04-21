@@ -6,25 +6,28 @@ import android.os.Build
 import android.os.Bundle
 import me.iacn.biliroaming.BiliBiliPackage.Companion.instance
 import me.iacn.biliroaming.BuildConfig
+import me.iacn.biliroaming.XposedInit
 import me.iacn.biliroaming.utils.*
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.net.URL
+import java.util.concurrent.TimeUnit
 
 class BUpgradeInfo(
-    private val versionSum: String,
+    versionSum: String,
     val url: String,
     val changelog: String,
 ) {
-    val version get() = versionSum.split(' ')[0]
-    val versionCode get() = versionSum.split(' ')[1].toLong()
-    val moduleVersion get() = versionSum.split(' ')[2]
-    val myVerCode get() = versionSum.split(' ')[3].toInt()
-    val sn get() = versionSum.split(' ')[4].toLong()
-    val size get() = versionSum.split(' ')[5].toLong()
-    val md5 get() = versionSum.split(' ')[6]
-    val buildTime get() = versionSum.split(' ')[7].toLong()
+    private val versionInfo = versionSum.split(' ')
+    val version get() = versionInfo[0]
+    val versionCode get() = versionInfo[1].toLong()
+    val moduleVersion get() = versionInfo[2]
+    val myVerCode get() = versionInfo[3].toInt()
+    val sn get() = versionInfo[4].toLong()
+    val size get() = versionInfo[5].toLong()
+    val md5 get() = versionInfo[6]
+    val buildTime get() = versionInfo[7].toLong()
 }
 
 @Suppress("DEPRECATION")
@@ -123,6 +126,9 @@ class AppUpgradeHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     "${info.changelog}\n\nAPP版本：${info.versionCode} b${info.sn}\n内置漫游版本：${info.moduleVersion}"
                 val triggeredBy = if (newMy) "本次更新由漫游更新触发" else "本次更新由APP更新触发"
                 newChangelog = newChangelog + "\n\n" + triggeredBy
+                val locatedInCN = runCatchingOrNull {
+                    XposedInit.country.get(5, TimeUnit.SECONDS) == "cn"
+                } ?: true
                 return mapOf(
                     "code" to 0,
                     "message" to "0",
@@ -132,7 +138,7 @@ class AppUpgradeHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         "content" to newChangelog,
                         "version" to info.version,
                         "version_code" to if (newMy) info.versionCode + 1 else info.versionCode,
-                        "url" to "https://ghproxy.com/${info.url}",
+                        "url" to if (locatedInCN) "https://ghproxy.com/${info.url}" else info.url,
                         "size" to info.size,
                         "md5" to info.md5,
                         "silent" to 0,
