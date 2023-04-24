@@ -2,6 +2,7 @@
 
 package me.iacn.biliroaming
 
+import android.app.Activity
 import android.app.AndroidAppHelper
 import android.app.Notification
 import android.content.Context
@@ -33,6 +34,8 @@ import kotlin.time.measureTimedValue
 infix fun Configs.Class.from(cl: ClassLoader) = if (hasName()) name.findClassOrNull(cl) else null
 val Configs.Method.orNull get() = if (hasName()) name else null
 val Configs.Field.orNull get() = if (hasName()) name else null
+
+val hookInfo get() = BiliBiliPackage.instance.hookInfo
 
 class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContext: Context) {
     init {
@@ -1043,6 +1046,67 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                         updateSpeed = method { name = it.name }
                     }
                 }.let { tripleSpeedService.addAll(it.toList()) }
+            }
+            orientationProcessor = orientationProcessor {
+                val startGravitySensorMethod = dexHelper.findMethodUsingString(
+                    "Start gravity sensor",
+                    true,
+                    -1,
+                    -1,
+                    null,
+                    -1,
+                    null,
+                    null,
+                    null,
+                    true
+                ).firstOrNull()?.let {
+                    dexHelper.decodeMethodIndex(it)
+                } ?: return@orientationProcessor
+                val clazz = startGravitySensorMethod.declaringClass
+                val activityField = clazz.declaredFields.find { f ->
+                    Activity::class.java.isAssignableFrom(f.type)
+                } ?: return@orientationProcessor
+                val switchOrientationMethod = clazz.declaredMethods.find { m ->
+                    m.parameterTypes.let { it.size == 1 && it[0] == Int::class.javaPrimitiveType }
+                } ?: return@orientationProcessor
+                val correctOrientationMethod = clazz.declaredMethods.find { m ->
+                    m.parameterTypes.let { it.size == 1 && it[0] == clazz } && !m.isSynthetic
+                } ?: return@orientationProcessor
+                class_ = class_ { name = clazz.name }
+                activity = field { name = activityField.name }
+                startGravitySensor = method { name = startGravitySensorMethod.name }
+                switchOrientation = method { name = switchOrientationMethod.name }
+                correctOrientation = method { name = correctOrientationMethod.name }
+            }
+            screenLayoutHelper = screenLayoutHelper {
+                val clazz =
+                    "com.bilibili.bangumi.ui.page.detail.playerV2.screenstate.OGVDetailScreenStateLayoutHelper"
+                        .from(classloader) ?: dexHelper.findMethodUsingString(
+                        "OGV-OGVDetailScreenStateLayoutHelper",
+                        false,
+                        -1,
+                        -1,
+                        null,
+                        -1,
+                        null,
+                        null,
+                        null,
+                        true
+                    ).firstOrNull()?.let {
+                        dexHelper.decodeMethodIndex(it)
+                    }?.declaringClass ?: return@screenLayoutHelper
+                val field = clazz.declaredFields.find {
+                    Activity::class.java.isAssignableFrom(it.type)
+                } ?: return@screenLayoutHelper
+                val types = clazz.declaredFields.map { it.type }
+                val method = clazz.declaredMethods.find { m ->
+                    m.isPublic && m.parameterTypes.let {
+                        it.size == 1 && !it[0].isPrimitive && it[0] in types
+                    }
+                } ?: return@screenLayoutHelper
+                class_ = class_ { name = clazz.name }
+                activity = field { name = field.name }
+                onStateChange = method { name = method.name }
             }
 
             bangumiApiResponse = class_ {
