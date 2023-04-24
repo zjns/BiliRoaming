@@ -34,4 +34,6 @@
     <string name="block_dm_feedback_title">屏蔽播放结束时弹幕氛围反馈</string>
     <string name="filter_story_title">过滤故事模式视频</string>
     <string name="filter_story_summary">过滤故事模式（竖屏）下的视频</string>
+    <string name="unlock_screen_orientation_title">解除屏幕方向锁定</string>
+    <string name="unlock_screen_orientation_summary">解除视频播放页屏幕方向锁定，允许系统根据当前设备姿态显示旋转建议按钮</string>
 </resources>
