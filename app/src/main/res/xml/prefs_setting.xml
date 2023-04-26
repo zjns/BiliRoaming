@@ -221,6 +221,11 @@
             android:title="@string/unlock_screen_orientation_title" />
 
         <SwitchPreference
+            android:key="remember_lossless_setting"
+            android:summary="@string/remember_lossless_setting_summary"
+            android:title="@string/remember_lossless_setting_title" />
+
+        <SwitchPreference
             android:key="save_comment_image"
             android:summary="@string/save_comment_image_summary"
             android:title="@string/save_comment_image_title" />
