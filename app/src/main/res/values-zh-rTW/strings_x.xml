@@ -36,4 +36,6 @@
     <string name="filter_story_summary">過濾故事模式（豎屏）下的影片</string>
     <string name="unlock_screen_orientation_title">解除螢幕方向鎖定</string>
     <string name="unlock_screen_orientation_summary">解除影片播放頁螢幕方向鎖定，允許系統根據當前設備姿態顯示旋轉建議按鈕</string>
+    <string name="remember_lossless_setting_title">記住無損設置開關狀態</string>
+    <string name="remember_lossless_setting_summary">記住播放器無損設置開關狀態</string>
 </resources>
