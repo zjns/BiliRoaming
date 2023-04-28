@@ -331,6 +331,12 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             if (!supportRevertLive) {
                 disablePreference("revert_live_room_feed")
             }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+                disablePreference(
+                    "unlock_screen_orientation",
+                    context.getString(R.string.os_not_support)
+                )
+            }
             if (!supportAddTag) {
                 disablePreference("add_bangumi")
                 disablePreference("add_korea")
