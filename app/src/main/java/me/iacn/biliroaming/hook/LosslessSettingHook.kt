@@ -1,19 +1,12 @@
 package me.iacn.biliroaming.hook
 
-import android.content.Context
-import android.content.SharedPreferences
 import me.iacn.biliroaming.BiliBiliPackage.Companion.instance
 import me.iacn.biliroaming.utils.*
 
 class LosslessSettingHook(classLoader: ClassLoader) : BaseHook(classLoader) {
-    @Suppress("DEPRECATION")
-    private val biliPrefs: SharedPreferences
-        get() = currentContext.getSharedPreferences("bili_preference", Context.MODE_MULTI_PROCESS)
     private var losslessEnabled: Boolean
         get() = biliPrefs.getBoolean("biliroaming_lossless", false)
-        set(value) {
-            biliPrefs.edit().putBoolean("biliroaming_lossless", value).apply()
-        }
+        set(value) = biliPrefs.edit().putBoolean("biliroaming_lossless", value).apply()
 
     override fun startHook() {
         if (!sPrefs.getBoolean("remember_lossless_setting", false))
