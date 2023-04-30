@@ -1,7 +1,7 @@
 <resources>
     <string name="subtitle_feedback_title">字幕转换错误反馈</string>
     <string name="pref_description_title">说明</string>
-    <string name="pref_description_summary">本模块与原版保持同步更新，并额外添加以下功能：\n1. 我的页面夜间模式切换添加防误触弹框\n2. 添加字幕下载功能\n3. 添加动态及评论文本折叠控制\n4. 自定义播放速度列表、默认及长按播放速度\n5. 解除视频播放页屏幕方向限制\n更多不值一提的小功能待你发现！\n内置使用可在应用内收到新的内置版更新！</string>
+    <string name="pref_description_summary">本模块与原版保持同步更新，并额外添加以下功能：\n1. 我的页面夜间模式切换添加防误触弹框\n2. 添加字幕下载功能\n3. 添加动态及评论文本折叠控制\n4. 自定义播放速度列表、默认及长按播放速度\n5. 解除视频播放页屏幕方向限制\n6. 记住播放器无损设置状态\n更多不值一提的小功能待你发现！\n内置使用可在应用内收到新的内置版更新！</string>
     <string name="enable_download_subtitle_title">启用字幕下载功能</string>
     <string name="enable_download_subtitle_summary">需开启解锁番剧限制选项，此功能才会生效。功能入口：播放详情页右上角三点 -> 字幕下载。字幕加载完成后入口才能显示。</string>
     <string name="skin_title">导入自制主题</string>
