@@ -219,7 +219,6 @@ message AppUpgrade {
   optional Method write_channel = 2;
   optional Method write_info = 3;
   optional Method clean_apk_dir = 4;
-  optional Class help_fragment = 5;
   optional Class supplier = 6;
   optional Method check = 7;
   optional Class upgrade_info = 8;
@@ -346,6 +345,23 @@ message ScreenLayoutHelper {
   optional Method on_state_change = 3;
 }
 
+message BiliAccountInfo {
+  optional Class class = 1;
+  optional Method get = 2;
+  optional Method is_effective_vip = 3;
+}
+
+message QualityViewHolder {
+  optional Class class = 1;
+  optional Method bind_online = 2;
+}
+
+message BLKV {
+  optional Class class = 1;
+  optional Method get_by_name = 2;
+  optional Method get_by_file = 3;
+}
+
 message PlayerFullStoryWidget {
   optional Class class = 1;
   optional Method method = 2;
@@ -409,6 +425,9 @@ message HookInfo {
   optional PlaybackSpeed playback_speed = 506;
   optional OrientationProcessor orientation_processor = 507;
   optional ScreenLayoutHelper screen_layout_helper = 508;
+  optional BiliAccountInfo bili_account_info = 509;
+  repeated QualityViewHolder quality_view_holder = 510;
+  optional BLKV blkv = 511;
   optional MapIds map_ids = 2;
   int32 client_version_code = 3;
   int32 module_version_code = 4;
