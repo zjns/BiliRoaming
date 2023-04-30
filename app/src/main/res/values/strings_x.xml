@@ -38,4 +38,6 @@
     <string name="unlock_screen_orientation_summary">解除视频播放页屏幕方向锁定，允许系统根据当前设备姿态显示旋转建议按钮</string>
     <string name="remember_lossless_setting_title">记住无损设置开关状态</string>
     <string name="remember_lossless_setting_summary">记住播放器无损设置开关状态</string>
+    <string name="trial_vip_quality_title">无限试用会员画质</string>
+    <string name="trial_vip_quality_summary">通过将视频流信息设置为限免达到无限试用会员画质目的，目前只对大部分UP主投稿视频有效</string>
 </resources>
