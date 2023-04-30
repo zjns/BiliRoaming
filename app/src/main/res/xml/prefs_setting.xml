@@ -473,10 +473,18 @@
             android:title="@string/skin_title" />
 
         <Preference
+            android:dependency="hidden"
             android:key="misc_remove_ads"
             android:title="@string/misc_remove_ads_title" />
 
+        <SwitchPreference
+            android:dependency="hidden"
+            android:key="trial_vip_quality"
+            android:summary="@string/trial_vip_quality_summary"
+            android:title="@string/trial_vip_quality_title" />
+
         <MultiSelectListPreference
+            android:dependency="hidden"
             android:entries="@array/filter_story_entries"
             android:entryValues="@array/filter_story_values"
             android:key="filter_story"
