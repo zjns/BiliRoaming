@@ -120,6 +120,7 @@ class XposedInit : IXposedHookLoadPackage, IXposedHookZygoteInit {
                     startHook(ScreenOrientationHook(lpparam.classLoader))
                     startHook(LosslessSettingHook(lpparam.classLoader))
                     startHook(TrialVipQualityHook(lpparam.classLoader))
+                    startHook(ChannelTabUIHook(lpparam.classLoader))
                     startHook(PurifyShareHook(lpparam.classLoader))
                     startHook(DynamicHook(lpparam.classLoader))
                     startHook(ProtoBufHook(lpparam.classLoader))
