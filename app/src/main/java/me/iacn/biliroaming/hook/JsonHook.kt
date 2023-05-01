@@ -15,6 +15,7 @@ class JsonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
 
         val hidden = sPrefs.getBoolean("hidden", false)
         val filterStory = sPrefs.getStringSet("filter_story", null).orEmpty()
+        val addChannel = sPrefs.getBoolean("add_channel", false)
         val purifyLivePopups = sPrefs.getStringSet("purify_live_popups", null) ?: setOf()
         val unlockPlayLimit = sPrefs.getBoolean("play_arc_conf", false)
 
@@ -121,6 +122,39 @@ class JsonHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                             it?.getObjectFieldAs<String?>("uri")
                                 ?.startsWith("bilibili://user_center/mine")
                                 ?: false
+                        }
+                    }
+
+                    if (hidden && addChannel) {
+                        val bottom = data?.getObjectFieldAs<MutableList<Any>>("bottom")
+                        val hasChannel = bottom?.any {
+                            it.getObjectFieldAs<String?>("uri")
+                                ?.startsWith("bilibili://pegasus/channel")
+                                ?: false
+                        }
+                        if (hasChannel != null && !hasChannel) {
+                            tabClass?.new()?.run {
+                                setObjectField("tabId", "123")
+                                setObjectField("reportId", "频道Bottom")
+                                setObjectField("name", "频道")
+                                setObjectField("uri", "bilibili://main/top_category")
+                                setObjectField(
+                                    "icon",
+                                    "http://i0.hdslb.com/bfs/archive/e16c9303e9edbf23031f545fcafc44d1f60cd07b.png"
+                                )
+                                setObjectField(
+                                    "iconSelected",
+                                    "http://i0.hdslb.com/bfs/archive/f6739d905dee57d2c0429d9b66acb3f39b294aff.png"
+                                )
+                                val pos = 2
+                                setIntField("pos", pos)
+                                bottom.forEach {
+                                    it.setIntField(
+                                        "pos", it.getIntField("pos")
+                                            .let { p -> if (p >= pos) p + 1 else p })
+                                }
+                                bottom.add(0, this)
+                            }
                         }
                     }
 
