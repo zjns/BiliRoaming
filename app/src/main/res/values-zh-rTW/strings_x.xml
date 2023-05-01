@@ -40,4 +40,6 @@
     <string name="remember_lossless_setting_summary">記住播放器無損設置開關狀態</string>
     <string name="trial_vip_quality_title">無限試用會員畫質</string>
     <string name="trial_vip_quality_summary">透過將影片串流訊息設定為限免達到無限試用會員畫質目的，目前只對大部分UP主投稿影片有效</string>
+    <string name="add_channel_title">添加頻道按鈕</string>
+    <string name="add_channel_summary">在底欄添加頻道按鈕（重啟兩次生效）</string>
 </resources>
