@@ -98,13 +98,11 @@ jobs:
           fi
 
           pip3 install -U pip
-          pip3 install -U urllib3
+          pip3 install -U requests
           py_get_ver_info=$(cat <<EOM
-          import json
           import re
-          from urllib3 import PoolManager
+          import requests
 
-          http = PoolManager()
           url = 'https://app.bilibili.com/x/v2/version/fawkes/upgrade'
           params = {
             'abi': 'arm64-v8a',
@@ -129,8 +127,7 @@ jobs:
             'cache-control': 'no-cache',
           }
           try:
-            req = http.request('GET', url, params, headers)
-            resp = json.loads(req.data.decode('utf-8'))
+            resp = requests.get(url, params, headers=headers).json()
             if resp['code'] == -304:
               print('no')
             else:
