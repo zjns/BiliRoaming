@@ -98,13 +98,11 @@ jobs:
           fi
 
           pip3 install -U pip
-          pip3 install -U urllib3
+          pip3 install -U requests
           py_get_ver_info=$(cat <<EOM
-          import json
           import re
-          from urllib3 import PoolManager
+          import requests
 
-          http = PoolManager()
           url = 'https://app.bilibili.com/x/v2/version/fawkes/upgrade'
           params = {
             'abi': 'arm64-v8a',
@@ -129,8 +127,7 @@ jobs:
             'cache-control': 'no-cache',
           }
           try:
-            req = http.request('GET', url, params, headers)
-            resp = json.loads(req.data.decode('utf-8'))
+            resp = requests.get(url, params, headers=headers).json()
             if resp['code'] == -304:
               print('no')
             else:
@@ -319,7 +316,7 @@ jobs:
           pip install -U pip
           pip install -U wheel
           pip install pyrogram==2.0.59 tgcrypto==1.2.4
-          pip install -U urllib3
+          pip install -U requests
 
       - name: Download release artifact
         uses: actions/download-artifact@v3
@@ -386,18 +383,15 @@ jobs:
         if: needs.check.outputs.new_my == '1'
         run: |
           py_get_up_changelog=$(cat <<EOM
-          import json
-          from urllib3 import PoolManager
+          import requests
 
-          http = PoolManager()
           url = 'https://api.github.com/repos/yujincheng08/BiliRoaming/releases/tags/v$M_VER_NAME'
           headers = {
             'Authorization': 'token ${{ secrets.HUB_TOKEN }}'
           }
           changelog = '可直接更新，原版更新日志请看 https://github.com/yujincheng08/BiliRoaming/releases/tag/v$M_VER_NAME'
           try:
-            req = http.request('GET', url, headers=headers)
-            resp = json.loads(req.data.decode('utf-8'))
+            resp = requests.get(url, headers=headers).json()
             changelog = resp['body'].split('更新日志\r\n', 1)[1].replace('\r', '')
             changelog = f'可直接更新，原版更新日志：\n{changelog}'
             print(changelog)
