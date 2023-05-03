@@ -15,6 +15,7 @@ class ProtoBufHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     override fun startHook() {
         val hidden = sPrefs.getBoolean("hidden", false)
         val blockLiveOrder = sPrefs.getBoolean("block_live_order", false)
+        val hideFollowButton = sPrefs.getBoolean("hide_follow_button", false)
         val purifyCity = sPrefs.getBoolean("purify_city", false)
         val removeHonor = sPrefs.getBoolean("remove_video_honor", false)
         val removeUgcSeason = sPrefs.getBoolean("remove_video_UgcSeason", false)
@@ -146,6 +147,10 @@ class ProtoBufHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     }
                 }
             }
+        }
+        if (hideFollowButton) {
+            "com.bapis.bilibili.main.community.reply.v1.ReplyControl".from(mClassLoader)
+                ?.replaceMethod("getShowFollowBtn") { false }
         }
         if (hidden && blockWordSearch) {
             "com.bapis.bilibili.main.community.reply.v1.Content".hookAfterMethod(
