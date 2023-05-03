@@ -42,4 +42,6 @@
     <string name="trial_vip_quality_summary">透過將影片串流訊息設定為限免達到無限試用會員畫質目的，目前只對大部分UP主投稿影片有效</string>
     <string name="add_channel_title">添加頻道按鈕</string>
     <string name="add_channel_summary">在底欄添加頻道按鈕（重啟兩次生效）</string>
+    <string name="hide_follow_button_title">隱藏評論關注按鈕</string>
+    <string name="hide_follow_button_summary">隱藏評論右邊的關注按鈕，防止誤點</string>
 </resources>
