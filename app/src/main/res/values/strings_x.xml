@@ -42,4 +42,6 @@
     <string name="trial_vip_quality_summary">通过将视频流信息设置为限免达到无限试用会员画质目的，目前只对大部分UP主投稿视频有效</string>
     <string name="add_channel_title">添加频道按钮</string>
     <string name="add_channel_summary">在底栏添加频道按钮（重启两次生效）</string>
+    <string name="hide_follow_button_title">隐藏评论关注按钮</string>
+    <string name="hide_follow_button_summary">隐藏评论右边的关注按钮，防止误点</string>
 </resources>
