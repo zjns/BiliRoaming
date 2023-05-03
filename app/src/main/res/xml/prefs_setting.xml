@@ -80,6 +80,10 @@
             android:summary="@string/disable_story_full_summary"
             android:title="@string/disable_story_full_title" />
         <SwitchPreference
+            android:key="hide_follow_button"
+            android:summary="@string/hide_follow_button_summary"
+            android:title="@string/hide_follow_button_title" />
+        <SwitchPreference
             android:defaultValue="false"
             android:key="disable_main_page_story"
             android:summary="@string/disable_main_page_story_summary"
