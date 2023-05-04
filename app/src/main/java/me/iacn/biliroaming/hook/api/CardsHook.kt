@@ -16,6 +16,7 @@ object CardsHook : ApiHook {
     }
 
     override fun canHandler(api: String) = cardsApis.any { api.startsWith(it) }
+    override fun decodeResponse() = false
 
     override fun hook(response: String): String {
         return JSONObject().apply {
