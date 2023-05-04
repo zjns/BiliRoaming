@@ -46,7 +46,9 @@ class OkHttpHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 val longType = Long::class.javaPrimitiveType!!
                 val contentLengthField = responseBody.javaClass.findFieldByExactTypeOrNull(longType)
                     ?: return@out
-                val respString = responseBody.callMethod(stringMethod)?.toString() ?: return@out
+                val respString = if (hook.decodeResponse()) {
+                    responseBody.callMethod(stringMethod)?.toString() ?: return@out
+                } else ""
                 val newResponse = hook.hook(respString)
                 val stream = newResponse.byteInputStream()
                 val length = stream.available()
