@@ -44,4 +44,6 @@
     <string name="add_channel_summary">在底欄添加頻道按鈕（重啟兩次生效）</string>
     <string name="hide_follow_button_title">隱藏評論關注按鈕</string>
     <string name="hide_follow_button_summary">隱藏評論右邊的關注按鈕，防止誤點</string>
+    <string name="disable_auto_subscribe_title">禁止自動訂閱合集</string>
+    <string name="disable_auto_subscribe_summary">禁止收藏有合集的影片時自動勾選訂閱合集</string>
 </resources>
