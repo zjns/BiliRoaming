@@ -7,12 +7,8 @@ import android.app.Activity
 import android.app.Activity.RESULT_CANCELED
 import android.app.AlertDialog
 import android.app.Dialog
-import android.content.ActivityNotFoundException
-import android.content.ClipData
+import android.content.*
 import android.content.ClipboardManager
-import android.content.Context
-import android.content.Intent
-import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Typeface
@@ -21,11 +17,7 @@ import android.os.Build
 import android.os.Bundle
 import android.preference.*
 import android.provider.MediaStore
-import android.text.Editable
-import android.text.InputType
-import android.text.SpannableStringBuilder
-import android.text.Spanned
-import android.text.TextWatcher
+import android.text.*
 import android.text.style.AbsoluteSizeSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
@@ -163,6 +155,12 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                 extra.add(context.getString(R.string.custom_subtitle_stroke_color))
                 extra.add(context.getString(R.string.custom_subtitle_stroke_width))
                 extra.add(context.getString(R.string.custom_subtitle_offset))
+            }
+
+            "misc_remove_ads" -> {
+                extra.add(context.getString(R.string.remove_search_ads_title))
+                extra.add(context.getString(R.string.remove_comment_cm_title))
+                extra.add(context.getString(R.string.block_dm_feedback_title))
             }
 
             "home_filter" -> {
@@ -1013,7 +1011,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             private set
 
         fun calcScoreAndApplyHintBy(text: String): Int {
-            if (text.isEmpty() || isGroup) {
+            if (text.isEmpty() || isGroup || key == "description") {
                 cacheScore = 0
                 return 0
             }
