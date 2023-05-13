@@ -121,6 +121,7 @@ class XposedInit : IXposedHookLoadPackage, IXposedHookZygoteInit {
                     startHook(LosslessSettingHook(lpparam.classLoader))
                     startHook(TrialVipQualityHook(lpparam.classLoader))
                     startHook(ChannelTabUIHook(lpparam.classLoader))
+                    startHook(FavFolderDialogHook(lpparam.classLoader))
                     startHook(PurifyShareHook(lpparam.classLoader))
                     startHook(DynamicHook(lpparam.classLoader))
                     startHook(ProtoBufHook(lpparam.classLoader))
