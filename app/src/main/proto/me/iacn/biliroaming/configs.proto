@@ -367,6 +367,11 @@ message BLKV {
   optional Method get_by_file = 3;
 }
 
+message FavFolderDialog {
+  optional Class class = 1;
+  optional Field check_box = 2;
+}
+
 message PlayerFullStoryWidget {
   optional Class class = 1;
   optional Method method = 2;
@@ -433,6 +438,7 @@ message HookInfo {
   optional BiliAccountInfo bili_account_info = 509;
   repeated QualityViewHolder quality_view_holder = 510;
   optional BLKV blkv = 511;
+  optional FavFolderDialog fav_folder_dialog = 512;
   optional MapIds map_ids = 2;
   int32 client_version_code = 3;
   int32 module_version_code = 4;
