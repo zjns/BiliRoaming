@@ -14,6 +14,7 @@ import android.text.style.LineBackgroundSpan
 import android.util.SparseArray
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckBox
 import android.widget.TextView
 import dalvik.system.BaseDexClassLoader
 import me.iacn.biliroaming.utils.*
@@ -1183,6 +1184,27 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 class_ = class_ { name = clazz.name }
                 getByName = method { name = byNameMethod.name }
                 getByFile = method { name = byFileMethod.name }
+            }
+            favFolderDialog = favFolderDialog {
+                val clazz = dexHelper.findMethodUsingString(
+                    "key:season_id",
+                    false,
+                    -1,
+                    0,
+                    null,
+                    -1,
+                    null,
+                    null,
+                    null,
+                    true
+                ).firstOrNull()?.let {
+                    dexHelper.decodeMethodIndex(it)?.declaringClass
+                } ?: return@favFolderDialog
+                val field = clazz.declaredFields.firstOrNull {
+                    CheckBox::class.java.isAssignableFrom(it.type)
+                } ?: return@favFolderDialog
+                class_ = class_ { name = clazz.name }
+                checkBox = field { name = field.name }
             }
 
             bangumiApiResponse = class_ {
