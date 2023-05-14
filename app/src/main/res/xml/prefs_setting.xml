@@ -269,7 +269,7 @@
 
         <SwitchPreference
             android:key="disable_auto_subscribe"
-            android:summary="@string/disable_auto_select_summary"
+            android:summary="@string/disable_auto_subscribe_summary"
             android:title="@string/disable_auto_subscribe_title" />
 
         <SwitchPreference
