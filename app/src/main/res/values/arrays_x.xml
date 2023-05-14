@@ -7,4 +7,12 @@
         <item>ad</item>
         <item>live</item>
     </string-array>
+    <string-array name="block_follow_button_entries">
+        <item>评论</item>
+        <item>动态</item>
+    </string-array>
+    <string-array name="block_follow_button_values">
+        <item>comment</item>
+        <item>dynamic</item>
+    </string-array>
 </resources>
