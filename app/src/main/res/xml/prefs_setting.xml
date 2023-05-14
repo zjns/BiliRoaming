@@ -90,10 +90,12 @@
             android:key="disable_story_full"
             android:summary="@string/disable_story_full_summary"
             android:title="@string/disable_story_full_title" />
-        <SwitchPreference
-            android:key="hide_follow_button"
-            android:summary="@string/hide_follow_button_summary"
-            android:title="@string/hide_follow_button_title" />
+        <MultiSelectListPreference
+            android:entries="@array/block_follow_button_entries"
+            android:entryValues="@array/block_follow_button_values"
+            android:key="block_follow_button"
+            android:summary="@string/block_follow_button_summary"
+            android:title="@string/block_follow_button_title" />
         <SwitchPreference
             android:defaultValue="false"
             android:key="disable_main_page_story"
