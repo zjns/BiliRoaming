@@ -7,7 +7,7 @@ import java.lang.reflect.Proxy
 class ProtoBufHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     override fun startHook() {
         val hidden = sPrefs.getBoolean("hidden", false)
-        val hideFollowButton = sPrefs.getBoolean("hide_follow_button", false)
+        val blockFollowButton = sPrefs.getStringSet("block_follow_button", null).orEmpty()
         val purifyCity = sPrefs.getBoolean("purify_city", false)
         val removeHonor = sPrefs.getBoolean("remove_video_honor", false)
         val removeUgcSeason = sPrefs.getBoolean("remove_video_UgcSeason", false)
@@ -129,9 +129,17 @@ class ProtoBufHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 }
             }
         }
-        if (hideFollowButton) {
-            "com.bapis.bilibili.main.community.reply.v1.ReplyControl".from(mClassLoader)
-                ?.replaceMethod("getShowFollowBtn") { false }
+        if (blockFollowButton.isNotEmpty()) {
+            if (blockFollowButton.contains("comment"))
+                "com.bapis.bilibili.main.community.reply.v1.ReplyControl".from(mClassLoader)
+                    ?.replaceMethod("getShowFollowBtn") { false }
+            if (blockFollowButton.contains("dynamic"))
+                arrayOf(
+                    "com.bapis.bilibili.app.dynamic.v2.ModuleAuthor",
+                    "com.bapis.bilibili.app.dynamic.v2.ModuleAuthorForward"
+                ).forEach {
+                    it.from(mClassLoader)?.replaceMethod("getShowFollow") { false }
+                }
         }
         if (hidden && blockWordSearch) {
             "com.bapis.bilibili.main.community.reply.v1.Content".hookAfterMethod(
