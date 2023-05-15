@@ -53,6 +53,25 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
         private var customSubtitleDialog: CustomSubtitleDialog? = null
         private lateinit var listView: ListView
         private lateinit var adapter: BaseAdapter
+        private val xHintColor = Color.parseColor("#2196F3")
+        private val xKeys = arrayOf(
+            "block_follow_button",
+            "text_fold",
+            "enable_download_subtitle",
+            "playback_speed_override",
+            "default_playback_speed",
+            "long_press_playback_speed",
+            "unlock_screen_orientation",
+            "remember_lossless_setting",
+            "disable_auto_subscribe",
+            "add_channel",
+            "modify_vip_section_style",
+            "skin",
+            "misc_remove_ads",
+            "trial_vip_quality",
+            "filter_story",
+            "purify_banner_ads",
+        )
         private var searchItems = listOf<SearchItem>()
 
         private var ListAdapter.preferenceList: List<Preference>
@@ -134,11 +153,18 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                     is MultiSelectListPreference -> preference.entries
                     else -> arrayOf()
                 }.orEmpty()
+                val key = preference.key.orEmpty()
+                val title = preference.title?.appendXMark(key) ?: ""
+                val summary = (preference.summary ?: "").let {
+                    if (key == "description") it.applyXStyle() else it
+                }
+                preference.title = title
+                preference.summary = summary
                 val searchItem = SearchItem(
                     preference,
-                    preference.key.orEmpty(),
-                    preference.title ?: "",
-                    preference.summary ?: "",
+                    key,
+                    title,
+                    summary,
                     entries,
                     preference is PreferenceGroup,
                 )
@@ -148,6 +174,23 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
                     addAll(retrieve(preference))
                 }
             }
+        }
+
+        private fun CharSequence.appendXMark(key: String): CharSequence {
+            return if (key in xKeys && !this.endsWith('X')) {
+                SpannableStringBuilder(this).run {
+                    append(" X"); applyXStyle(length - 1)
+                }
+            } else this
+        }
+
+        private fun CharSequence.applyXStyle(startIdx: Int = -1) = SpannableString(this).apply {
+            val boldSpan = StyleSpan(Typeface.BOLD)
+            val colorSpan = ForegroundColorSpan(xHintColor)
+            val flags = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            val start = if (startIdx == -1) indexOf('X') else startIdx
+            setSpan(boldSpan, start, start + 1, flags)
+            setSpan(colorSpan, start, start + 1, flags)
         }
 
         private fun SearchItem.appendExtraKeywords() = when (key) {
