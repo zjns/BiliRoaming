@@ -74,12 +74,11 @@ class TrialVipQualityHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                 }
         }
 
-        abPrefs.javaClass.superclass.hookBeforeMethod(
-            "getString", String::class.java, String::class.java
-        ) { param ->
-            val key = param.args[0]
-            if (!isEffectiveVip && key == "ff_unite_player")
-                param.result = null
+        hookInfo.playerController.class_.from(mClassLoader)?.declaredMethods?.find {
+            it.name == hookInfo.playerController.getPlayer.orNull
+        }?.hookBeforeMethod {
+            if (!isEffectiveVip)
+                it.args[1] = false
         }
     }
 
