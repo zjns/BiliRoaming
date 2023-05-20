@@ -373,6 +373,11 @@ message FavFolderDialog {
   optional Field check_box = 2;
 }
 
+message IPlayerController {
+  optional Class class = 1;
+  optional Method get_player = 2;
+}
+
 message PlayerFullStoryWidget {
   optional Class class = 1;
   optional Method method = 2;
@@ -440,6 +445,7 @@ message HookInfo {
   repeated QualityViewHolder quality_view_holder = 510;
   optional BLKV blkv = 511;
   optional FavFolderDialog fav_folder_dialog = 512;
+  optional IPlayerController player_controller = 513;
   optional MapIds map_ids = 2;
   int32 client_version_code = 3;
   int32 module_version_code = 4;
