@@ -1158,6 +1158,7 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                     }
                 }.toList().let { qualityViewHolder.addAll(it) }
             blkv = bLKV {
+                if (!BuildConfig.DEBUG) return@bLKV
                 val byNameMethod = dexHelper.findMethodUsingString(
                     ".blkv",
                     true,
@@ -1201,6 +1202,35 @@ class BiliBiliPackage constructor(private val mClassLoader: ClassLoader, mContex
                 } ?: return@favFolderDialog
                 class_ = class_ { name = clazz.name }
                 checkBox = field { name = field.name }
+            }
+            playerController = iPlayerController {
+                val m = dexHelper.findMethodUsingString("use unite player: ")
+                    .firstOrNull()?.let { dexHelper.decodeMethodIndex(it) }
+                if (m != null) {
+                    class_ = class_ { name = m.declaringClass.name }
+                    getPlayer = method { name = m.name }
+                    return@iPlayerController
+                }
+                val m2 = dexHelper.findMethodUsingString("create and prepared player for shared")
+                    .firstOrNull()?.run {
+                        val clazz = dexHelper.decodeMethodIndex(this)
+                            ?.declaringClass ?: return@iPlayerController
+                        val classIdx = dexHelper.encodeClassIndex(clazz)
+                        dexHelper.findMethodInvoking(
+                            this,
+                            parameterShorty = "V",
+                            declaringClass = classIdx
+                        ).firstOrNull()?.run {
+                            dexHelper.findMethodInvoking(
+                                this,
+                                parameterShorty = "LLZL"
+                            ).firstOrNull()?.let {
+                                dexHelper.decodeMethodIndex(it)
+                            }
+                        }
+                    } ?: return@iPlayerController
+                class_ = class_ { name = m2.declaringClass.name }
+                getPlayer = method { name = m2.name }
             }
 
             bangumiApiResponse = class_ {
