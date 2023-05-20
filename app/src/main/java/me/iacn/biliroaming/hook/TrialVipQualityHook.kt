@@ -29,9 +29,18 @@ class TrialVipQualityHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         get() = (this.toFloat() * (currentContext.resources.displayMetrics.density + 0.5F)).toInt()
 
     override fun startHook() {
-        if (!sPrefs.getBoolean("hidden", false)
-            || !sPrefs.getBoolean("trial_vip_quality", false)
-        ) return
+        val hidden = sPrefs.getBoolean("hidden", false)
+        val trialVipQuality = sPrefs.getBoolean("trial_vip_quality", false)
+        val forceOldPlayer = sPrefs.getBoolean("force_old_player", false)
+        if (forceOldPlayer || (hidden && trialVipQuality)) {
+            hookInfo.playerController.class_.from(mClassLoader)?.declaredMethods?.find {
+                it.name == hookInfo.playerController.getPlayer.orNull
+            }?.hookBeforeMethod {
+                if (forceOldPlayer || !isEffectiveVip)
+                    it.args[1] = false
+            }
+        }
+        if (!hidden || !trialVipQuality) return
         instance.playURLMossClass?.hookAfterMethod(
             XC_MethodHook.PRIORITY_LOWEST,
             "playView", instance.playViewReqClass
@@ -72,13 +81,6 @@ class TrialVipQualityHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                         }
                     }
                 }
-        }
-
-        hookInfo.playerController.class_.from(mClassLoader)?.declaredMethods?.find {
-            it.name == hookInfo.playerController.getPlayer.orNull
-        }?.hookBeforeMethod {
-            if (!isEffectiveVip)
-                it.args[1] = false
         }
     }
 
