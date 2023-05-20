@@ -243,6 +243,10 @@
             android:title="@string/remember_lossless_setting_title" />
 
         <SwitchPreference
+            android:key="force_old_player"
+            android:title="@string/force_old_player_title" />
+
+        <SwitchPreference
             android:key="save_comment_image"
             android:summary="@string/save_comment_image_summary"
             android:title="@string/save_comment_image_title" />
