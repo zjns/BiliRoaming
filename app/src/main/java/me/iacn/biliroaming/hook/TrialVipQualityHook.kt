@@ -32,6 +32,11 @@ class TrialVipQualityHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         val hidden = sPrefs.getBoolean("hidden", false)
         val trialVipQuality = sPrefs.getBoolean("trial_vip_quality", false)
         val forceOldPlayer = sPrefs.getBoolean("force_old_player", false)
+        if (forceOldPlayer) {
+            "tv.danmaku.biliplayerv2.GeminiPlayerFFKt".from(mClassLoader)?.declaredMethods?.find {
+                it.parameterTypes.isEmpty() && it.returnType == Boolean::class.javaPrimitiveType
+            }?.replaceMethod { false }
+        }
         if (forceOldPlayer || (hidden && trialVipQuality)) {
             hookInfo.playerController.class_.from(mClassLoader)?.declaredMethods?.find {
                 it.name == hookInfo.playerController.getPlayer.orNull
