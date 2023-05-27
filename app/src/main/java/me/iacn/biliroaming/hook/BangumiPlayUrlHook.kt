@@ -478,6 +478,43 @@ class BangumiPlayUrlHook(classLoader: ClassLoader) : BaseHook(classLoader) {
             response.javaClass.callStaticMethod("parseFrom", newRes)
         } ?: response
 
+    private fun VideoInfoKt.Dsl.fixPlayback(qn: Int) {
+        val checkConnection = fun(url: String) = runCatchingOrNull {
+            val connection = URL(url).openConnection() as HttpURLConnection
+            connection.requestMethod = "HEAD"
+            connection.connectTimeout = 1000
+            connection.readTimeout = 1000
+            connection.connect()
+            connection.responseCode == HttpURLConnection.HTTP_OK
+        } ?: false
+        val videoIndex = streamList.indexOfFirst { it.streamInfo.quality == qn }
+        val checkedVideo = streamList.getOrNull(videoIndex)?.copy {
+            dashVideo = dashVideo.copy {
+                if (!checkConnection(baseUrl))
+                    backupUrl.find(checkConnection)?.let { baseUrl = it }
+            }
+        }
+        if (checkedVideo != null) {
+            val videos = streamList.toMutableList().apply {
+                removeAt(videoIndex); add(videoIndex, checkedVideo)
+            }
+            streamList.clear()
+            streamList.addAll(videos)
+        } else return
+        val audioIndex = dashAudio.indexOfFirst { it.id == checkedVideo.dashVideo.audioId }
+        val checkedAudio = dashAudio.getOrNull(audioIndex)?.copy {
+            if (!checkConnection(baseUrl))
+                backupUrl.find(checkConnection)?.let { baseUrl = it }
+        }
+        if (checkedAudio != null) {
+            val audios = dashAudio.toMutableList().apply {
+                removeAt(audioIndex); add(audioIndex, checkedAudio)
+            }
+            dashAudio.clear()
+            dashAudio.addAll(audios)
+        }
+    }
+
     private fun VideoInfoKt.Dsl.fixDownloadProto(checkBaseUrl: Boolean = false) {
         var audioId = 0
         var setted = false
@@ -824,6 +861,8 @@ class BangumiPlayUrlHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         reconstructVideoInfoUpos(isDownload)
         if (isDownload) {
             fixDownloadProto(true)
+        } else {
+            fixPlayback(quality)
         }
     }
 
