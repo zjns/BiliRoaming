@@ -19,6 +19,7 @@ import me.iacn.biliroaming.hook.BangumiSeasonHook.Companion.lastSeasonInfo
 import me.iacn.biliroaming.network.BiliRoamingApi
 import me.iacn.biliroaming.utils.*
 import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
@@ -437,17 +438,21 @@ class SubtitleHook(classLoader: ClassLoader) : BaseHook(classLoader) {
 
     private fun JSONArray.toSubtitles(): List<SubtitleItem> {
         val subList = mutableListOf<SubtitleItem>()
-        val lanCodes = mutableSetOf<String>()
-        for (s in this)
-            lanCodes.add(s.optString("key"))
-        val replaceHans = "zh-Hans" !in lanCodes
+        val lanCodes = asSequence<JSONObject>().map { it.optString("key") }
+        // prefer select furry cn subtitle if official not exist, then consider kktv
+        val replaceable = "zh-Hans" !in lanCodes
+        val replaceToFurry = replaceable && "cn" in lanCodes
+        val replaceToKKTV = replaceable && !replaceToFurry && "cn.kktv" in lanCodes
         for (subtitle in this) {
             subtitleItem {
                 id = subtitle.optLong("id")
                 idStr = subtitle.optLong("id").toString()
                 subtitleUrl = subtitle.optString("url")
-                lan = subtitle.optString("key")
-                    .let { if (it == "cn" && replaceHans) "zh-Hans" else it }
+                lan = subtitle.optString("key").let {
+                    if ((it == "cn" && replaceToFurry) || (it == "cn.kktv" && replaceToKKTV)) {
+                        "zh-Hans"
+                    } else it
+                }
                 lanDoc = subtitle.optString("title")
             }.let { subList.add(it) }
         }
