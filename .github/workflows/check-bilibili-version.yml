@@ -430,7 +430,8 @@ jobs:
 
       - name: Send to Telegram (New Bilibili)
         shell: python
-        if: needs.check.outputs.new_bili == '1'
+        #if: needs.check.outputs.new_bili == '1'
+        if: ${{ 'A' == 'B' }}
         env:
           API_ID: ${{ secrets.TELEGRAM_API_ID }}
           API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
@@ -495,7 +496,8 @@ jobs:
 
       - name: Send to Telegram (New module)
         shell: python
-        if: needs.check.outputs.new_my == '1'
+        #if: needs.check.outputs.new_my == '1'
+        if: ${{ 'A' == 'B' }}
         env:
           API_ID: ${{ secrets.TELEGRAM_API_ID }}
           API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
