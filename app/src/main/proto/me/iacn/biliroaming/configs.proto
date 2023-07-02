@@ -118,7 +118,7 @@ message PlayerCoreService {
   optional Method on_seek_complete = 4;
   optional Method update_speed = 6;
   optional Class seek_complete_listener = 5;
-  optional Method set_default_speed = 6;
+  optional Method set_default_speed = 7;
 }
 
 message PegasusFeed {
