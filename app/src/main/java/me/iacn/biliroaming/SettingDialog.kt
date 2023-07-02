@@ -102,6 +102,8 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             findPreference("group")?.let { aboutGroup?.removePreference(it) }
             val hiddenGroup = findPreference("hidden_group") as? PreferenceCategory
             findPreference("force_th_comment")?.let { hiddenGroup?.removePreference(it) }
+            val miscGroup = findPreference("misc") as? PreferenceCategory
+            findPreference("default_speed")?.let { miscGroup?.removePreference(it) }
             findPreference("custom_splash")?.onPreferenceChangeListener = this
             findPreference("custom_splash_logo")?.onPreferenceChangeListener = this
             findPreference("save_log")?.summary =
@@ -115,7 +117,7 @@ class SettingDialog(context: Context) : AlertDialog.Builder(context) {
             findPreference("home_filter")?.onPreferenceClickListener = this
             findPreference("custom_subtitle")?.onPreferenceChangeListener = this
             findPreference("danmaku_filter")?.onPreferenceClickListener = this
-            findPreference("default_speed").onPreferenceClickListener = this
+            //findPreference("default_speed").onPreferenceClickListener = this
             findPreference("customize_accessKey")?.onPreferenceClickListener = this
             findPreference("share_log")?.onPreferenceClickListener = this
             findPreference("customize_drawer")?.onPreferenceClickListener = this
