@@ -113,7 +113,9 @@
             android:title="@string/dialog_blur_background_title" />
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/miscellaneous_category">
+    <PreferenceCategory
+        android:key="misc"
+        android:title="@string/miscellaneous_category">
         <SwitchPreference
             android:key="teenagers_mode_dialog"
             android:summary="@string/teenagers_mode_dialog_summary"
